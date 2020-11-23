@@ -1,0 +1,37 @@
+Module-name: Imatrix
+Contact:  Diego
+Email:    diego.jarquin@gmail.com
+General:  computes eigen value decomposition to hadamard product of two square matrices G1#G2
+
+Folder Structure: 
+\
+ |-- code                    
+ |   -- mainCode.R
+ |-- data
+ |   
+ |-- doc
+ |   -- description
+ |-- input
+ |   -- parameters.R
+ |-- output
+ 
+Use: 
+ To execute the module:
+	=> Generate a copy of the module to a data-analysis folder
+	=> Open R
+	=> Set the working  to be the folder code within the data-analysis folder
+	=> Modify the parameter file in the input folder.
+	=> Type in the R-console:  source('mainCode.R')
+	=> Results will be saved in the output folder.
+
+Requires: 
+
+Inputs:
+    => G?.rda  Two matrices that will consider as interaction components. 
+Output:
+    => G??.rda      G matrix in binary format. Where ? is refered to components in interaction, i.e GE 
+              (genotype by environment interaction)
+    => SVD??.rda    The eigen-value decomposition of G (computed using eigen(G)) 
+    => Eigen??.pdf  Plots of loadings of lines in the 1st eigenvectors, and of
+                    the eigen-values, and of the cumulative variance explained 
+                    by each component.	
