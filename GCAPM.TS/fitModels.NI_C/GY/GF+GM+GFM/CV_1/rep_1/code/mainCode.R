@@ -89,7 +89,7 @@
       yNA<-y
       print(fold)
 
-      if(fold != -999)
+      if(fold != -999)  # There is no CVs, predict all lines
          {
 
           dir.create(paste('fold_',fold,sep=''))
@@ -116,7 +116,7 @@
 
         }else{
 
-         dir.create('fullData')
+            dir.create('fullData')   # when folds=-999
          setwd('fullData')
 
          fm=BGLR(y=y,ETA=ETA,nIter=nIter,burnIn=burnIn,verbose=TRUE)

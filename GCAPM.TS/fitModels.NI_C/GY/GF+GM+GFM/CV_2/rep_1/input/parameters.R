@@ -5,7 +5,9 @@ phenotype.file <- '../../../../../../root.Data/Z2_1.csv'
  AB <- list() 
  AB[[1]] <- '../../../../../../G/GcI.P1/output/EVD.rda'       # path to pehnotype file 
  AB[[2]] <- '../../../../../../G/GcI.P2/output/EVD.rda'       # path to pehnotype file 
- AB[[3]] <- '../../../../../../I/GcP1P2/output/EVD.rda'       # path to pehnotype file 
+ AB[[3]] <- '../../../../../../I/GcP1P2/output/EVD.rda'       # path to pehnotype file
+AB[[4]] <- '../../../../../../G/E/output/EVD.rda'       # path to pehnotype file
+
  type <- c('RKHS','RKHS','RKHS','RKHS','RKHS','RKHS') 
  colENV  <- NULL  # column in phenotype file that gives the id of the environment 
  colVAR  <- 3  # column in phenotype file that gives the id of the variety 

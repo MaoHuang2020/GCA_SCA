@@ -1,0 +1,40 @@
+Module-name: Gmatrix
+Contact:  Diego
+Email:    diego.jarquin@gmail.com
+General:  Computes G matrix, where G=ZXDX'Z', here X is an nxp matrix of covariates, D a diagonal matrix
+          that can include weights (see below for further details) and Z is a matrix linking phenotypes with covariates.
+
+Folder Structure: 
+\
+ |-- code                    
+ |   -- mainCode.R
+ |-- data
+ |   
+ |-- doc
+ |   -- description
+ |-- input
+ |   -- parameters.R
+ |-- output
+ 
+Use: 
+ To execute the module:
+	=> Generate a copy of the module to a data-analysis folder
+	=> Open R
+	=> Set the working  to be the folder code within the data-analysis folder
+	=> Modify the parameter file in the input folder.
+	=> Type in the R-console:  source('mainCode.R')
+	=> Results will be saved in the output folder.
+
+Requires: 
+
+Inputs:
+    => (X): A comma sepparated ASCII file individuals in rows and covariates in columns. 
+       First row of the file gives variable name, and 1s column gives individual IDs.
+    => (weights):   a text file giving weights to be used in D (if NULL all covariates are equally weigthted)
+    => (IDs of phenotypes): an ASCII files containing IDs of phenotypes, this is used to form Z
+Output:
+    => G.rda      G matrix in binary format.
+    => SVD.rda    The eigen-value decomposition of G (computed using eigen(G)) 
+    => Eigen.pdf  Plots of loadings of lines in the 1st eigenvectors, and of
+                  the eigen-values, and of the cumulative variance explained 
+                  by each component.	

@@ -3,9 +3,9 @@
 
   setwd('../output')
 
-  source('../input/parameters.R')
+  source('/Users/maohuang/Desktop/Kelp/GCA_SCA/GCAPM.TS/splitingSNPs.cI/input/parameters.R')
 
-  load(mm.file)
+  load(mm.file)  ### not
   SNPs <- HcI
   NaNs <- matrix(NA,nrow=1, ncol=dim(SNPs)[2])
   for(i in 1:dim(SNPs)[2])
