@@ -21,15 +21,11 @@ G2 <- G
 GI <- G1*G2
 EVD <- eigen(GI)
 
-save(GI,file='G.rda')
-save(EVD,file='EVD.rda')
+save(GI,file='../GP1P2/G.rda')
+save(EVD,file='../GP1P2/EVD.rda')
 
-
-
-
-
-
- pdf(file='Eigen.pdf')
+# This is plotting script
+pdf(file='Eigen.pdf')
   plot(EVD$vectors[,1],EVD$vectors[,2],main='',xlab='First Component',ylab='Second Component')
   plot(EVD$vectors[,1],EVD$vectors[,3],main='',xlab='First Component',ylab='Third Component')
   plot(EVD$vectors[,2],EVD$vectors[,3],main='',xlab='Second Component',ylab='Third Component')
