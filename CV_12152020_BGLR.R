@@ -472,5 +472,7 @@ write.table(tmp,file=paste("predictions_cycle",i,".csv",sep=""),row.names=FALSE,
 } # End cycles
 
 colMeans(cor)
-
+## GP1+GP2 Model
+# colMeans(cor)
+# 0.481274
 
