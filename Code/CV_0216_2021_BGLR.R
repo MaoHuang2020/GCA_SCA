@@ -1,203 +1,527 @@
 ### Make EVD data
 rm(list=ls())
-library(here)
-  here()
-load(here("OneTime1920/data","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
+#library(here) 
+  # I quit using this library. Its source code had some issues at one point and can't read in
+  # here()
+
+#WD<-"/Users/maohuang/Desktop/Kelp/GCA_SCA/" # local
+
+WD<-"/local/workdir/mh865/GCA_SCA/"  # run in terminal
+load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
 #load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/dataNHim_withChk_3_sets_PhotoScore0123.rdata")  ## Indi
-load(here("OneTime1920/data","outCovComb_dip_0116_2021.Rdata"))
-write.csv(outCovComb4_dipOrder,here("OneTime1920/data","A.csv"))
+load(paste0(WD,"OneTime1920/data/","outCovComb_dip_0116_2021.Rdata"))
+  #write.csv(outCovComb4_dipOrder,here("OneTime1920/data","A.csv"))
+mm.file<- paste0(WD,"OneTime1920/data/","A.csv")          # path to covariates file
+#source(paste0(WD,"Code/","BGLR_functions.R"))  #local
+source(paste0(WD,"OneTime1920/","BGLR_functions.R")) # terminal
 
-mm.file        <- here("Onetime1920/data","A.csv")          # path to covariates file
-
+####
 Y1<-dataNHpiBoth_C
-colKeep<-c("crossID","Crosses","femaPar","malePar","plotNo","Region","popChk","line","block","Year","PhotoScore","dryWgtPerM","AshFreedryWgtPerM")
-Y2<-Y1[,colKeep]
+colKeep<-c("crossID","Crosses","femaPar","femaParLoc","malePar","maleParLoc","plotNo","Region","popChk","line","block","Year","PhotoScore","dryWgtPerM","AshFreedryWgtPerM")
+Y2<-droplevels(Y1[,colKeep])
   head(Y2)
+Y<-Y2 # Both Years
 
-#P1 ###!!!!!
-colIDy<-3
-colnames(Y2)[colIDy]<-"P1"
+### Get the "BLUE_Trait"
+load(paste0(WD,"OneTime1920/data/BLUE_DwPM_2vs1Year.rdata"))
 
-#P2 ###!!!!!
-colIDy <- 4  # !!!!! 3, and 4 CHANGE between GP1, and GP2
-colnames(Y2)[colIDy]<-"P2"
+library(expss)
+Y$BLUE_Trait<-vlookup(Y$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2Yrs",lookup_column = "CrossName") ### This is the DwPM
+  head(Y)
 
-#the P1 column. column in phenotype file that gives the IDs that link observations to covariates or grouping factor
-# or NULL if ID is not used
-### Reads data and perform consistency checks
-G0 <- read.table(mm.file,sep=',',header=TRUE,stringsAsFactors=FALSE)
-  dim(G0)  # 866x867 -> P1: 107 x 107 (106, experimental+ 1 check); P2: 121 x 121
-  G0[1:4,1:5]
-name <- G0[,1]
-G <- G0[,-1]
-colnames(G) <- name
-rownames(G) <- name
-G <- 2*as.matrix(G) ###### ?????? Diagonal becomes 4!
-n<- dim(G)[1]
-  dim(G)
-Y<-Y2
-nrowchk<-nrow(Y[Y$crossID=="Check",]) #33
-dataNHpi_RMchk<-droplevels(Y[!Y$crossID=="Check",]) # Subset without chk levels
-  dim(dataNHpi_RMchk)  
-IDs<-dataNHpi_RMchk[,colIDy]  #All IDs need to be in the "G" matrix ???? This is all IDs, including those for checks
-   head(IDs)
+  plot<-ggplot(data=Y,aes(BLUE_Trait,Year))+
+    geom_point(aes(color=as.factor(Year)))+ 
+    geom_line(aes(group=as.factor(Crosses)))
+  print(plot)
 
-Index<-rownames(G)%in%IDs  ##P1:107, Adding index to ensure G has the list of individuals in the IDs (P1 list)
-G<-G[Index,Index]  # subset the G to match up list of P1 names
-  dim(G)  
-  G[1:4,1:5]
-phenoNamesFact<-factor(IDs,levels=rownames(G))   #Which levels should I use???? colnames are sorted alphabetically for the outCovComb 
-msZ0<-model.matrix(~-1 +phenoNamesFact,data=dataNHpi_RMchk)  
-    dim(msZ0)
-    msZ0[1:4,1:5]
-# Add checks
-  nrowchk # These are the checks that were not having any P1 nor P2
-chkSpMat<-matrix(0, nrowchk, nrow(G))
-rownames(chkSpMat)<-rownames(Y[Y$crossID=="Check",])
-  dim(chkSpMat)   # 27 * 207 or 27 *121
-#  
-msZ<-rbind(msZ0,chkSpMat)
-  dim(msZ)  # The rownumbers are the corresponding rows 
-
-#### Should I be making the order of the Z rows the same as Y????????????
-    str(IDs)
-Z<-msZ
-    dim(Z)
-    Z[1:4,1:5]
-    # order of Z is the same as that of G
-colnames(Z)<-stringr::str_remove(colnames(Z),"phenoNamesFact")
-    #Z[,which(colnames(Z)=="SL18-NL-7-FG3")]
-    identical(colnames(Z),rownames(G))
-    identical(rownames(Z),rownames(Y))
-  GCA<-tcrossprod(tcrossprod(Z,G),Z)  # ZGZ'
-  dim(GCA)
-# }
-
-GCA1<-GCA
-save(GCA,file=here("Onetime1920/GP1","G.rda"))  ###!!! GP1/
-
-GCA2<-GCA
-save(GCA,file=here("Onetime1920/GP2","G.rda"))  ###!!! GP2/
-
-EVD<-eigen(GCA)
-rownames(EVD$vectors)<-rownames(GCA)
-## If you provide G, the RHKS will internally compute its eigen values
-## provide to save time
-save(EVD,file=here("Onetime1920/GP1","EVD.rda")) ###!!! GP1/
-
-save(EVD,file=here("Onetime1920/GP2","EVD.rda")) ###!!! GP2/
-
-
-######## Generating the EVD for P1xP2
-G1.file <- here("Onetime1920/GP1","G.rda")        # path to matrix file 1
-G2.file <- here("Onetime1920/GP2","G.rda")           # path to matrix file 2
-
-load(G1.file)
-G1 <- GCA
-load(G2.file)
-G2 <- GCA
-
-GI <- G1*G2 
-EVD <- eigen(GI)
-
-save(GI,file=here("Onetime1920/GP1P2","G.rda"))
-save(EVD,file=here("Onetime1920/GP1P2","EVD.rda"))
-
-### Onetime Prediction
+###
+Inputfiledir<-c("OneTime1920/GP1/","OneTime1920/GP2/","OneTime1920/GP1P2/") 
   head(Y)
   dim(Y)
-colENV  <- NULL  # column in phenotype file that gives the id of the environment 
-colVAR  <- which(colnames(Y)=="Crosses")  # column in phenotype file that gives the id of the variety 
-colPhen <- which(colnames(Y)=="dryWgtPerM")  # phenotypes column
-colCV <- ncol(Y)+1  # CV column
-CV0 <- FALSE 
-ESC <- FALSE 
-r <- 1
-set.seed(1)
+y<-Y[,"dryWgtPerM"]  # phenotypes column  !!!
+gid<-Y[,"Crosses"]   # Crosses
+yBLUE<-Y[,"BLUE_Trait"] # This is the BLUE for DwPM
 
-nIter  <- 50000
-burnIn <- 40000
-#### CV scheme main code
+    
+#############
+#the P1 column. column in phenotype file that gives the IDs that link observations to covariates or grouping factor
+CalGCA(Y=Y,mm.file=mm.file,colIDy = 3,colNam = "P1",savefiledir = "Onetime1920/Yr19_20/GP1/") 
+CalGCA(Y=Y,mm.file=mm.file,colIDy = 4,colNam = "P2",savefiledir = "Onetime1920/Yr19_20/GP2/") 
 
-library(BGLR)
-y   = Y[,colPhen]
-gid = Y[,colVAR]
+CalSCA(G1.file=paste0(WD,"Onetime1920/GP1/","G.rda"),
+       G2.file=paste0(WD,"Onetime1920/GP2/","G.rda"),
+       savefileDir="Onetime1920/GP1P2/")
+############# Run it only once
 
-if(ESC) { y=scale(y,center=TRUE,scale=TRUE) }
 
-load(here("OneTime1920/GP1","EVD.rda"))  
+
+### 1. Both years data all used
+
+r<-NULL 
+for (i in 1:5){
+  setwd(paste0(WD,"OneTime1920/Alldata_output/"))
+  dir.create(paste0("Rep",i))
+  savepath<-paste0("OneTime1920/Alldata_output/Rep",i,"/")  # the path following WD
+  
+y<-y  
+testing<-which(!is.na(Y$crossID))  # all lines
+  str(testing)
+Alldata<-RunBGLR(YearEffects=TRUE,
+              nIter=80000,burnIn=60000,
+              y=y,testing=testing,
+              Inputfiledir=Inputfiledir,
+              Outputfiledir=savepath)  
+
+  r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+} 
+
+write.csv(r, paste0(WD,savepath,"r_with_",i,"Reps.csv"))
+mean(r)  # 0.936 over 5 reps
+
+### 1.2 All data CV
+# A. create sampling
+
+#######
+setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
+
+sampleCV<-matrix(nrow=nrow(Y),ncol=500)
+for (n in 1:500){
+  sets<-rep(1:10,29)[-c(1:7)]  #283 ones
+  sampleCV[,n]<-sets[order(runif(nrow(Y)))]
+}
+save(sampleCV,file="sampleCV_283Indiv_0225_2021.Rdata")
+###### One Time
+
+
+load(paste0(WD,"OneTime1920/Alldata_CV_output/sampleCV_283Indiv_0225_2021.Rdata"))
+
+sampleCV<-sampleCV
+folds   <- 1:10 
+reps<-5 # !!!
+ntraits<-1  # !!!
+cor<-matrix(nrow=reps,ncol=ntraits)
+#          list(~factor(femaParLoc)+factor(maleParLoc),data=Y,model="BRR"),
+load(paste0(WD,Inputfiledir[1],"EVD.rda"))  
 EVD1<-EVD
   rm(EVD)
-load(here("OneTime1920/GP2","EVD.rda"))       
+load(paste0(WD,Inputfiledir[2],"EVD.rda"))       
 EVD2<-EVD
   rm(EVD)
-load(here("OneTime1920/GP1P2","EVD.rda"))       
+load(paste0(WD,Inputfiledir[3],"EVD.rda"))       
 EVD3<-EVD
   rm(EVD)
-###########
-#### This is to allow each AB a separate ETA?
-library(BGLR)
-setwd(here("OneTime1920/output"))
 ETA<-list(list(~factor(popChk)+factor(Year),data=Y,model="FIXED"),
           list(~factor(line)+factor(block),data=Y,model="BRR"),
+
           list(V=EVD1$vectors,d=EVD1$values,model="RKHS"),
           list(V=EVD2$vectors,d=EVD2$values,model="RKHS"),
           list(V=EVD3$vectors,d=EVD3$values,model="RKHS")
-)
+          )
+          
+for (i in 1:reps){
+  setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
+  dir.create(paste0("Rep",i))
+  savepath<-paste0("OneTime1920/Alldata_CV_output/Rep",i,"/")  # the path following WD
+  
+  tmp<-NULL
+   for (fold in folds){
 
-fm=BGLR(y=y,
-        ETA=ETA,
-        nIter=nIter,
-        burnIn=burnIn,
-        saveAt="OneTime_With_Check",
-        verbose=TRUE)
+     #dir.create(paste0('10folds_Cycle',i,"/"))
+     #savepath<-paste0('10folds_Cycle',i,"/")   ### Creating the fold_# folder
+        
+     yNA<-y
+     # print(fold)
+     testing<-which(sampleCV[,i]==fold)
+     yNA[testing]<-NA
+     
+     fm<-BGLR(y=yNA,
+             ETA=ETA,
+             nIter=80000,
+             burnIn=60000,
+             saveAt=paste0(WD,savepath,"CVData1920_",fold,"thfold_rep",i),
+             verbose=TRUE)
+     save(fm,file=paste0(WD,savepath,"fm_",fold,"thfold_rep",i,".rda"))
+     
+     yPred<-fm$ETA[[5]]$u+fm$ETA[[4]]$u+fm$ETA[[3]]$u 
+     predict<-data.frame(testing,Crosses=gid[testing],yBLUE=yBLUE[testing],yPred=yPred[testing])
+     predict$popChk<-expss::vlookup(predict$Crosses,dict=Y,lookup_column = "Crosses",result_column = "popChk")
+     predict$Year<-expss::vlookup(predict$Crosses,dict=Y,lookup_column = "Crosses",result_column = "Year")
+     
+     tmp<-rbind(tmp,predict)
+     # r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+   }
+  cor[i,]<-cor(tmp$yBLUE,tmp$yPred,use="complete")
+  
+  write.table(tmp,file=paste0(WD,savepath,"predictions_rep",i,".csv"),row.names=FALSE,sep=",") 
+  rm(fm) 
+  unlink("*.dat")
+}
+  colMeans(cor)  # All 283 individuals from tmp   #noLOC 0.2696567
+write.csv(cor,"10foldCV_cor2_using_283_plots_NoFMLoc.csv")
 
-yHat=fm$yHat
-cor(yHat,y,use="complete")  #0.9623704
-varE<-scan("OneTime_With_CheckvarE.dat")
-varB<-scan("OneTime_With_CheckETA_2_varB.dat")
-varU3<-scan("OneTime_With_CheckETA_3_varU.dat")
-varU4<-scan("OneTime_With_CheckETA_4_varU.dat")
-varU5<-scan("OneTime_With_CheckETA_5_varU.dat")
+cor2<-matrix(nrow=reps,ncol=1)
+for (i in 1:reps){
+  savepath<-paste0("OneTime1920/Alldata_CV_output/Rep",i,"/")
+  predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
+  cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
+}
+  colMeans(cor2) #0.1827861     #noLOC 0.2699811
+write.csv(cor2,"10foldCV_cor2_using_250ES_plots_NoFMLoc.csv")
 
-mean(varE)
-mean(varB)
-mean(varU3)
-mean(varU4)
-mean(varU5)
+### 2. Between Location prediction  
 
-# > mean(varE)
-# [1] 0.04635725
-# > mean(varB)
-# [1] 0.01075573
-# > mean(varU3)
-# [1] 0.005894885
-# > mean(varU4)
-# [1] 0.001956617
-# > mean(varU5)
-# [1] 0.003598225
+### RM one loc at a time, as testing set
+table(droplevels(Y)$femaParLoc)
+locs<-levels(droplevels(Y)$femaParLoc)
+v<-NULL
+for (j in 1:length(locs))
+{
+  uniqueCrossesPerLoc<-count(unique(droplevels(Y)[Y$femaParLoc==locs[j],]$Crosses))
+  c<-nrow(uniqueCrossesPerLoc)
+  v<-c(v,c)
+}
+v
+names(v)<-locs
+#Total unique Crosses with data
+#CB CC JS LD LL ME NC NL OD OI SF 
+#14 46 14 40  3  2 15 38  2 54 20
 
-plot(varU3,type='o',col=2,cex=.5)
-
-par(mfrow=c(2,2))
-plot(varE,type='o',col=2,cex=.5)
-plot(varU3,type='o',col=1,cex=.5)
-plot(varU4,type='o',col=1,cex=.5)
-plot(varU5,type='o',col=1,cex=.5)
-
-# #
-# mean(varE)
-# 0.03884398
-# mean(varB)
-# 0.009886058
-# mean(varU3)
-# 0.005178434
-# mean(varU4)
-# 0.001864376
-# mean(varU5)
-# 0.003799387
+#Total plots with data
+#CB CC JS LD LL ME NC NL OD OI SF 
+#14 47 14 42  3 17 15 45  2 64 20
 
 
+locs<-c("CB","CC","JS","LD","NC","NL","OI","SF")
+
+for (i in 1:5){
+  setwd(paste0(WD,"OneTime1920/BetweenLoc_output/")) #where to create Rep# folder
+  dir.create(paste0("Rep",i))
+  WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/Rep",i,"/")  # the path following WD
+
+  setwd(WDloc)   #where to create loc# folder
+  r<-NULL
+ for(loc in locs) {
+  
+  dir.create(paste0("loc",loc))
+  savepath<-paste0("OneTime1920/BetweenLoc_output/Rep",i,"/loc",loc,"/")
+  
+  yNA<-y 
+  testing<-which(Y$femaParLoc==loc)  # 156 plots
+  yNA[testing]<-NA  # Other locations to predict this testing one
+  
+  BetweenLoc<-RunBGLR(YearEffects=TRUE,
+                       nIter=80000,burnIn=60000,
+                       y=yNA,testing=testing,
+                       Inputfiledir=Inputfiledir,
+                       Outputfiledir=savepath) 
+  
+  r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+  
+ }
+  
+  names(r)<-locs
+  write.csv(r, paste0("r_1Loc_PP_Rep",i,".csv"))
+}
+
+#One rep only, r made on all plots (not on Crosses)
+  # CB          CC          JS          LD          ME(check)          NC
+  # 0.54064825 -0.08664727 -0.65768603  0.66493417  0.99995689 -0.33652471
+  # NL          OI          SF
+  # 0.14753220  0.57215122  0.64058045
+  rAll<-NULL
+  for (i in 1:5){
+    
+    WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/Rep",i,"/")  # the path following WD
+    setwd(WDloc)
+    r<-NULL
+    
+    for(loc in locs){
+      #yNA<-y 
+      testing<-which(Y$femaParLoc==loc)  # 156 plots
+      #yNA[testing]<-NA
+      savepath<-paste0("OneTime1920/BetweenLoc_output/Rep",i,"/loc",loc,"/")
+      
+      r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath)) 
+    }
+    names(r)<-locs
+    write.csv(r, paste0("r_1Loc_PP_Rep",i,".csv"))
+    
+    rAll[[i]]<-read.csv(paste0(WD,"OneTime1920/BetweenLoc_output/Rep",i,"/","/r_1Loc_PP_Rep",i,".csv"),row.names=1)
+    #std error of the BLUEs??
+  }  
+  
+  rowMeans(do.call(cbind.data.frame, rAll))
+
+
+### std error of the BLUEs??
+stdE<-NULL
+mean<-NULL
+for (loc in locs){
+  # Read in the BLUE/predict file in Rep 1
+  i=1
+  BLUEpath<-paste0(WD,"OneTime1920/BetweenLoc_output/Rep",i,"/loc",loc,"/")
+  x<-read.csv(paste0(BLUEpath,"/TP_predict_PP.csv"),sep=",",header=T)$yBLUE
+  std <- function(x) sd(x[!is.na(x)])/sqrt(length(x[!is.na(x)]))  # sdev/sqrt(n)
+  stdE<-c(stdE,std(x))
+  mean<-c(mean,mean(x,na.rm=TRUE))
+}
+  names(stdE)<-names(mean)<-locs
+  
+  
+  ### 3. Yr19to20
+  
+  yrTP<-2019
+  yrPP<-2020
+  RmCommonX<-droplevels(Y[Y$Year==yrPP,]$Crosses[which(Y[Y$Year==yrPP,]$Crosses%in%Y[Y$Year==yrTP,]$Crosses)])  # the CommonCrosses 
+  
+  setwd(paste0(WD,"OneTime1920/Yr19to20_output/"))
+ 
+  yBLUE<-Y[!Y$Crosses%in%RmCommonX,"BLUE_Trait"]
+  gid<-Y[!Y$Crosses%in%RmCommonX,"Crosses"]
+  y<-Y[!Y$Crosses%in%RmCommonX,"dryWgtPerM"]
+  
+  r<-NULL 
+  for (i in 1:5){
+    dir.create(paste0("Rep",i))
+    savepath<-paste0("OneTime1920/Yr19to20_output/Rep",i,"/")  # the path following WD
+    
+    yNA<-y
+    testing<-which(Y$Year==2020)  ## PP year
+    yNA[testing]<-NA
+    
+    BetweenYear<-RunBGLR(YearEffects=FALSE,
+                         nIter=80000,burnIn=60000,
+                         y=yNA,testing=testing,
+                         Inputfiledir=Inputfiledir,
+                         Outputfiledir=savepath)
+    
+    r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+    }
+  
+  write.csv(r, paste0(WD,savepath,"cor_",i,"Reps.csv"))
+  print(mean(r)) #-0.1159702
+  
+
+  
+  ### 4. Yr20to19
+  
+  yrTP<-2019
+  yrPP<-2020
+  RmCommonX<-droplevels(Y[Y$Year==yrPP,]$Crosses[which(Y[Y$Year==yrPP,]$Crosses%in%Y[Y$Year==yrTP,]$Crosses)])  # the CommonCrosses 
+  
+  setwd(paste0(WD,"OneTime1920/Yr20to19_output/"))
+  
+  r<-NULL
+  for (i in 1:5){
+    dir.create(paste0("Rep",i))
+    savepath<-paste0("OneTime1920/Yr20to19_output/Rep",i,"/")  # the path following WD
+    
+    yNA<-y
+    testing<-which(Y$Year==2019)  ## PP year
+    yNA[testing]<-NA
+    
+    BetweenYear<-RunBGLR(YearEffects=FALSE,
+                         nIter=80000,burnIn=60000,
+                         y=yNA,testing=testing,
+                         Inputfiledir=Inputfiledir,
+                         Outputfiledir=savepath)
+    r<-c(r,predict(testing=testing,gid=gid2,yBLUE=yBLUE2,Y=Y,fmfiledir=savepath))
+  }
+  
+  
+  # for (i in 1:5){
+  #   savepath<-paste0("OneTime1920/Yr20to19_output/Rep",i,"/")
+  #   
+  #   yBLUE2<-Y[!Y$Crosses%in%RmCommonX,"BLUE_Trait"]
+  #   gid2<-Y[!Y$Crosses%in%RmCommonX,"Crosses"]
+  #   #y2<-Y[!Y$Crosses%in%RmCommonX,"dryWgtPerM"]
+  # 
+  #   
+  # }
+  
+  write.csv(r, paste0(WD,savepath,"cor_",i,"Reps.csv"))
+  print(mean(r))  # -0.02784699
+  
+  #####
+  yHatVarMean(filedir = "OneTime1920/Alldata_output/Rep1/") # the directory that follows here()
+  yHatVarMean(filedir = "OneTime1920/Yr19to20_output/Rep1/") # the directory that follows here()
+  yHatVarMean(filedir = "OneTime1920/Yr20to19_output/") # the directory that follows here()
+  BetweenYear$fm$varE;BetweenYear$fm$ETA[[2]]$varB;BetweenYear$fm$ETA[[3]]$varU;BetweenYear$fm$ETA[[4]]$varU;BetweenYear$fm$ETA[[5]]$varU
+  yHatVarMean(filedir = "OneTime1920/BetweenLoc_output/")
+  yHatVarMean(filedir = "OneTime1920/BothGPgeno_output/")
+  yHatVarMean(filedir = "OneTime1920/FGgeno_output/Rep1/")
+  #yHatVarMean(filedir = "OneTime1920/test_output/")
+  
+  varU<-NULL
+  for (i in 1:5){
+    var<-yHatVarMean(filedir = paste0("OneTime1920/Alldata_output/Rep",i,"/"))
+    varU<-rbind(varU,var[2,])
+    colnames(varU)<-colnames(var)
+  }
+colMeans(varU)
+
+
+varU<-NULL
+for (i in 1:5){
+  var<-yHatVarMean(filedir = paste0("OneTime1920/BothGPgeno_output/Rep",i,"/"))
+  varU<-rbind(varU,var[2,])
+  colnames(varU)<-colnames(var)
+}
+colMeans(varU)
+
+  
+
+
+### 5. Both GPs genotyped,predict others  
+
+# Input the list of GPs being genotyped
+GPsequenced<-read.csv(paste0(WD,"OneTime1920/data/","3_plates_sequenced_names.csv"),sep=",",header=TRUE)  
+dim(GPsequenced)
+head(GPsequenced)
+GPsequenced<-GPsequenced$Name_InPheno 
+str(GPsequenced)
+
+r<-NULL
+for (i in 1:5){
+  setwd(paste0(WD,"OneTime1920/BothGPgeno_output/"))
+  dir.create(paste0("Rep",i))
+  savepath<-paste0("OneTime1920/BothGPgeno_output/Rep",i,"/")  # the path following WD
+  
+  yNA<-y
+  BothGP<-which(Y[Y$femaPar%in%GPsequenced,]$malePar%in%GPsequenced)  # 166 plots
+  #
+  OneFG<-which(Y$femaPar%in%GPsequenced & !Y$malePar%in%GPsequenced) # 49
+  OneMG<-which(Y$malePar%in%GPsequenced & !Y$femaPar%in%GPsequenced) # 54
+  NeitherGP<-which(!Y$femaPar%in%GPsequenced & !Y$malePar%in%GPsequenced) #14
+  
+  Y[NeitherGP,][,1:10]
+  
+  testing<-setdiff(1:nrow(Y),BothGP) #117 plots
+  yNA[testing]<-NA
+  
+  BothGPgeno<-RunBGLR(YearEffects=TRUE,
+                      nIter=80000,burnIn=60000,
+                      y=yNA,testing=testing,
+                      Inputfiledir=Inputfiledir,
+                      Outputfiledir=savepath) 
+  
+  r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+}
+write.csv(r, paste0(WD,savepath,"cor_",i,"Reps.csv"))
+print(mean(r))  # -0.0700428
+
+
+### 6. SPs, one genotyped, another not, predict those both are not
+r<-NULL
+for (i in 1:5){
+  setwd(paste0(WD,"OneTime1920/FGgeno_output/"))
+  dir.create(paste0("Rep",i))
+  savepath<-paste0("OneTime1920/FGgeno_output/Rep",i,"/")  # the path following WD
+  
+  yNA<-y
+  #
+  OneFG<-which(Y$femaPar%in%GPsequenced & !Y$malePar%in%GPsequenced)  #49
+  
+  testing<-setdiff(1:nrow(Y),OneFG)   #234
+  yNA[testing]<-NA
+  
+  OneGPgeno<-RunBGLR(YearEffects=TRUE,
+                     nIter=80000,burnIn=60000,
+                     y=yNA,testing=testing,
+                     Inputfiledir=Inputfiledir,
+                     Outputfiledir=savepath) 
+  
+  r<-c(r,predict(testing=testing,gid=gid,yBLUE=yBLUE,Y=Y,fmfiledir=savepath))
+}
+write.csv(r, paste0(WD,savepath,"cor_",i,"Reps.csv"))
+print(mean(r)) #0.07600304
+
+
+###############################################  
+#### Making BLUEs within Year and between Years
+  rm(list=ls())
+  library(here) 
+  # I quit using this library. Its source code had some issues at one point and can't read in
+  #here()
+  
+  WD<-"/Users/maohuang/Desktop/Kelp/GCA_SCA/" # local
+
+  load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
+  dataNHpi<-dataNHpiBoth_C  ##!!!!!
+  
+  library(lme4)
+  exptlSP <- as.character(dataNHpi$popChk) == "ES"
+  dataNHpi$entry <- as.character(dataNHpi$popChk)
+  dataNHpi$entry[exptlSP] <- as.character(dataNHpi$plotNo[exptlSP])
+  dataNHpi$group <- as.factor(ifelse(exptlSP, 1, 0))
+  
+  library(lmerTest) # can give p-values
+  
+  for (col in c( "line", "block","popChk","group","entry","Year")) 
+    dataNHpi[,col] <- factor(dataNHpi[,col])
+    dataNHpi$Trait<-dataNHpi$dryWgtPerM  ### !!!!! TraitBLUE
+  
+  data<-dataNHpi
+  fitAug <- lm(Trait ~ Year+ line*Year+ block*Year+ group +Crosses , data=data) # Crosses:group
+    summary(fitAug)
+  colnames(summary(fitAug)$coef)
+  CrossBLUE<-summary(fitAug)$coef[grep("x",rownames(summary(fitAug)$coef)),"Estimate"]  # "x": xtract the Crosses
+    str(CrossBLUE)
+  CrossBLUE<-as.data.frame(CrossBLUE)
+  library(stringr)
+  CrossBLUE$CrossName<-str_replace(rownames(CrossBLUE),"Crosses","")
+    head(CrossBLUE)
+  colnames(CrossBLUE)[colnames(CrossBLUE)=="CrossBLUE"]<-"BLUE_DwPM_2Yrs"
+  save(CrossBLUE,file=paste0(WD,"OneTime1920/data/","BLUE_DwPM_2vs1Year.rdata"))
+  
+  library(expss)
+  CrossBLUE$plotNo<-vlookup(CrossBLUE$CrossName,dict=data,result_column = "plotNo",lookup_column="Crosses")
+  CrossBLUE$Year<-vlookup(CrossBLUE$CrossName,dict=data,result_column = "Year",lookup_column="Crosses")
+    head(CrossBLUE)
+  which(!is.na(CrossMerge$TraitBLUE)) 
+  
+  which(!unique(droplevels(dataNHpiBoth_C)$Crosses)%in%CrossBLUE$CrossName)
+  dataNHpiBoth_C[c(1,205,247),]  ####??????Why these three crosses got thrown out??????
+  
+
+  
+### Within Year BLUEs, This becomes not necessary, because the Year effects are fixed 
+  # library(stringr) 
+  # CrossBLUE2<-NULL
+  # for (Year in c(2019,2020)){
+  #   i=Year-2018
+  #   data<-droplevels(dataNHpi[dataNHpi$Year==Year,])
+  #   fitAug1 <- lm(Trait ~ line+ block+ group+Crosses , data=data) # Crosses:group
+  #   CrossBLUE2[[i]]<-summary(fitAug)$coef[grep("x",rownames(summary(fitAug)$coef)),"Estimate"]
+  #   CrossBLUE2[[i]]<-as.data.frame(CrossBLUE2[[i]])
+  #   CrossBLUE2[[i]]$CrossName<-str_replace(rownames(CrossBLUE2[[i]]),"Crosses","")
+  #   head(CrossBLUE2[[i]])
+  #   colnames(CrossBLUE2[[i]])[colnames(CrossBLUE2[[i]])=="CrossBLUE2[[i]]"]<-"BLUE_DwPM_1Year"
+  # }
+  # 
+  # CrossBLUE$BLUE_DwPM_2019<-vlookup(CrossBLUE$CrossName,dict=CrossBLUE2[[1]],result_column = "BLUE_DwPM_1Year",lookup_column = "CrossName")
+  # CrossBLUE$BLUE_DwPM_2020<-vlookup(CrossBLUE$CrossName,dict=CrossBLUE2[[2]],result_column = "BLUE_DwPM_1Year",lookup_column = "CrossName")
+  # 
+  # head(CrossBLUE)
+  # ######Check the BLUEs
+  # Y<-Y2
+  # commonX<-Y[Y$Year==2019,]$Crosses[which(Y[Y$Year==2019,]$Crosses%in%Y[Y$Year==2020,]$Crosses)]
+  # CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2019
+  # CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2020
+  # cor(round(CrossBLUE$BLUE_DwPM_2Yrs),round(CrossBLUE$BLUE_DwPM_2019),use="complete") #1
+  # ######
+ 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 ### Setting the CV
 ########
 #### make more random samples

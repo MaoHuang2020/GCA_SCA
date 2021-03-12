@@ -2,7 +2,8 @@
 # Get the list of GPs individuals, from that 866 hMat matrix
 # These include the GPs being used in making crosses; not used for crosses but were genotyped and had biomass
 ### I think later the hMat matrix will be removed with its founders????
-setwd("/Users/maohuang/Desktop/Kelp/GCA_SCA/OneTimePrediction")
+rm(list=ls())
+setwd("/Users/maohuang/Desktop/Kelp/GCA_SCA/OneTimePrediction_tst")
 load("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_WithSGP_866.rdata")
   ls()
   dim(hMat)
@@ -78,6 +79,20 @@ dataNHpi$Trait<-dataNHpi$dryWgtPerM  ### !!!!! TraitBLUE
 
 fitAug <- lm(Trait ~ Year+ line*Year+ block*Year+ Crosses , data=dataNHpi) # Crosses:group
        summary(fitAug)
+       
+##### ANOVA 
+     anova(fitAug)
+       #Response: Trait
+       #             Df    SumSq MeanSq   Fvalue    Pr(>F)    
+       # Year         1  2.6616 2.66155 257.1232 6.311e-08 ***
+       #  line         4  0.1102 0.02754   2.6606 0.1025722    
+       # block       10  3.2172 0.32172  31.0803 9.104e-06 ***
+       #  Crosses    246 30.2028 0.12278  11.8609 0.0001887 ***
+       #  Year:line    3  0.0326 0.01087   1.0501 0.4168238    
+       # Year:block   7  0.0536 0.00766   0.7398 0.6466632    
+       # Residuals    9  0.0932 0.01035 
+       
+       
        colnames(summary(fitAug)$coef)
 CrossBLUE<-summary(fitAug)$coef[grep("x",rownames(summary(fitAug)$coef)),"Estimate"]
   str(CrossBLUE)
@@ -86,8 +101,41 @@ library(stringr)
 CrossBLUE$CrossName<-str_replace(rownames(CrossBLUE),"Crosses","")
   head(CrossBLUE)
 library(expss)
+ 
+##### Plot out data   
+df <-dataNHpi[,colnames(dataNHpi)%in%c("crossID","Year","plotNo","Region","plotNo_Numeric","femaPar","femaParLoc","malePar","maleParLoc","Crosses","CrossLoc","line","position","block","PhotoScore","Trait")]
+  #colnames(df)[1] <- "Name"  # crossID
+  df<-df[order(df$Crosses,df$Year),] 
+  df$Year<-as.factor(df$Year)
   
-### Add the TraitBLUE  
+  its_fndr<-function(GPstring){
+    fndr<-strsplit(GPstring,split="-", fixed=T) 
+    its_fndr<-sapply(fndr,function(vec) paste(vec[1:3], collapse="-"))
+  }
+  
+  df$FGfndr<-its_fndr(as.character(df$femaPar))
+  df$MGfndr<-its_fndr(as.character(df$malePar))
+  
+  df$fndrPair<-paste0(df$FGfndr,"x",df$MGfndr)
+  df$LocPair<-paste0(df$femaParLoc,"x",df$maleParLoc) 
+  
+  plot(df$Year,df$Trait, pch=16)
+  pdf("Trait_2020vs2019_Boxplot.pdf", height=8, width=8)
+  
+  plot(df$Trait,df$Year, pch=16)
+  
+  library(ggplot2) 
+  
+  plot<-ggplot(data=df,aes(Trait,Year))+
+    geom_point(aes(color=Year))+ 
+    geom_line(aes(group=as.factor(Crosses)))
+  print(plot)
+
+
+ 
+  
+  
+### Add the TraitBLUE back to the Crosses file
 Crosses$TraitBLUE<-vlookup(Crosses$GID,dict=CrossBLUE,result_column = "CrossBLUE",lookup_column="CrossName")
   head(Crosses)
   which(!is.na(CrossMerge$TraitBLUE)) 
