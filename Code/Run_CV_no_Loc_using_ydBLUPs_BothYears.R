@@ -3,7 +3,6 @@
 rm(list=ls())
 
 WD<-"/local/workdir/mh865/GCA_SCA/"  # run in terminal
-datafdr<-paste0(WD,"OneTime1920/data/")
 
 load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
 #load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/dataNHim_withChk_3_sets_PhotoScore0123.rdata")  ## Indi
@@ -68,6 +67,8 @@ ETA<-list(
 )
 
 #####!!!
+datafdr<-paste0(WD,"OneTime1920/data/")
+
 load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
 rownames(Both_dBLUPs)<-Both_dBLUPs$Row.names
 Both_dBLUPs<-Both_dBLUPs[,-1]

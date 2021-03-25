@@ -53,6 +53,7 @@ dataNH<-dataNH
   
 ###################
 ### Within Year
+  # 2020_273 is the same as 2020_219
   comX<-c("SL18-OI-15-FG1xSA18-CB-2-MG3","SL18-LD-13-FG2xSL18-LD-13-MG2","SL18-LD-2-FG2xSL18-SF-19-MG1","SL18-NL-2-FG3xSA18-CB-4-MG1","SL18-NL-3-FG1xSA18-CB-7-MG2")
 Yr<-2020
 WithinYear=TRUE

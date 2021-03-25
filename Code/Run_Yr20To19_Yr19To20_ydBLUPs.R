@@ -55,13 +55,14 @@ ETA<-list(
 )
 
 
-pop<-"Yr19to20"  #Yr20to19
-TPYr<-2019      # TPYr   
-NAYr<-2020    ## This is the NAYr 
+pop<-"Yr20to19"  #Yr20to19
+TPYr<-2020      # TPYr   
+NAYr<-2019    ## This is the NAYr 
 
 #####!!!
 datafdr<-paste0(WD,"OneTime1920/data/")
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) ##!!!
+  ##!!!WithinYr Data
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) 
 WithinYr_Both_dBLUPs<-droplevels(WithinYr_Both_dBLUPs)
 
 identical(as.character(WithinYr_Both_dBLUPs$Row.names),as.character(WithinYr_Both_dBLUPs$plotNo.y))
@@ -69,10 +70,6 @@ identical(as.character(WithinYr_Both_dBLUPs$Row.names),as.character(WithinYr_Bot
 rownames(WithinYr_Both_dBLUPs)<-WithinYr_Both_dBLUPs$Row.names
 WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,-1]
   head(WithinYr_Both_dBLUPs)
-
-#WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,!colnames(WithinYr_Both_dBLUPs)%in%c("Crosses.x","Crosses.y","plotNo.x","plotNo.y","Year.x","Year.y")]  
-#CrossBLUE<-WithinYr_Both_dBLUPs ### No need subsetting the TP year here
-#CrossBLUE<-CrossBLUE[,!colnames(CrossBLUE)%in%c("Year.x","Year.y")] ### RM extra cols
 
 traits<-colnames(WithinYr_Both_dBLUPs)[!colnames(WithinYr_Both_dBLUPs)%in%c("Row.names","Crosses.x","Crosses.y","plotNo.x","plotNo.y","Year.x","Year.y")]
   print(traits)
@@ -88,16 +85,13 @@ colnames(cor)<-traits
 for (j in 1:length(traits)){
   Coltrait<-traits[j]
   
-  # load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
-  # CrossBLUE<-CrossBLUE1
-
   #!!!!!!!!!! USE drBLUP estimated WithinYra 2019 and 2020 !
-  #
    for (Yr in c(2019)) {
      Y1<-Y[Y$Year==Yr,]
   
      CrossBLUEYr<-WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,]
-      #rownames(CrossBLUEYr)<-CrossBLUEYr$Crosses.x
+      ## Look up the Crosses dBLUPs within Yr
+      ## RM extra cols
      CrossBLUEYr<-CrossBLUEYr[,!colnames(CrossBLUEYr)%in%c("Year.x","Year.y","Crosses.y","plotNo.x","plotNo.y")]
   
      Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUEYr,result_column = paste0(Coltrait),lookup_column = "Crosses.x")
@@ -107,7 +101,7 @@ for (j in 1:length(traits)){
      Y2<-Y[Y$Year==Yr,]
   
      CrossBLUEYr<-WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,]
-      #rownames(CrossBLUEYr)<-CrossBLUEYr$Crosses.x
+
      CrossBLUEYr<-CrossBLUEYr[,!colnames(CrossBLUEYr)%in%c("Year.x","Year.y","Crosses.y","plotNo.x","plotNo.y")]
   
      Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUEYr,result_column = paste0(Coltrait),lookup_column = "Crosses.x")
@@ -115,11 +109,8 @@ for (j in 1:length(traits)){
   
    Yrbind<-rbind(Y1,Y2)
      Ydata<-Y   # Save out the original Y, for in case use
-     Y<-Yrbind  # Now Y is updated with its BLUEs from within 2019 and 2020 Year
+     Y<-Yrbind  # Now Y is updated with its BLUEs from within 2019 and 2020 WithinYr
   
-
-    # Y$BLUE_Trait<-expss::vlookup(Y$plotNo,dict=CrossBLUE,result_column = paste0(Coltrait),lookup_column = "row.names") ### !!!
-    #   head(Y)
     y<-yBLUE<-Y[,"BLUE_Trait"]   # phenotypes column  !!!
 
 for (i in 1:reps){
@@ -129,7 +120,7 @@ for (i in 1:reps){
   savepath<-paste0("OneTime1920/",pop,"_output/",Coltrait,"_ydrBLUP_noLocRep",i,"/")
   
   yNA<-y
-  # print(fold)
+
   testing<-which(Y$Year==NAYr)  ## PP year
   yNA[testing]<-NA
   
@@ -155,7 +146,7 @@ for (i in 1:reps){
 }
   rm(fm) 
   unlink("*.dat")
-  print(colMeans(cor))  # All 283 individuals from tmp   #noLOC 0.2696567
+  print(colMeans(cor))  
 }
 
 write.csv(cor,paste0("cor_",length(traits),"_traits_",pop,"_using_250ES_plots_NoFMLoc_ydrBLUP_as_y.csv"))
