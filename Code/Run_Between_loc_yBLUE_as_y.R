@@ -7,7 +7,7 @@ load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata")
 Y1<-dataNHpiBoth_C
 colKeep<-c("crossID","Crosses","femaPar","femaParLoc","malePar","maleParLoc","plotNo","Region","popChk","line","block","Year","PhotoScore","dryWgtPerM","AshFreedryWgtPerM")
 Y2<-droplevels(Y1[,colKeep])
-head(Y2)
+  head(Y2)
 Y<-Y2 # Both Years
 Y<-droplevels(Y[Y$popChk=="ES",])
 
@@ -15,46 +15,24 @@ Y<-droplevels(Y[Y$popChk=="ES",])
 ### Get the "BLUE_Trait"
 load(paste0(WD,"OneTime1920/data/","BLUE_DwPM_2vs1Year_Update03082021.rdata"))
 
-##!!!!!!!!!! BLUE is estimated within 2019 and 2020 !
-
-for (Yr in c(2019)) {
-  Y1<-Y[Y$Year==Yr,]
-  Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2019",lookup_column = "CrossName")  # This is the DwPM
-} 
-
-for (Yr in c(2020)){
-  Y2<-Y[Y$Year==Yr,]
-  Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2020",lookup_column = "CrossName") 
-}
-
-Yrbind<-rbind(Y1,Y2)
-Ydata<-Y
-Y<-Yrbind
-
 Inputfiledir<-c("OneTime1920/GP1/250Individual/","OneTime1920/GP2/250Individual/","OneTime1920/GP1P2/250Individual/") 
-head(Y)
-dim(Y)
+  head(Y)
+  dim(Y)
 
 load(paste0(WD,Inputfiledir[1],"EVD.rda"))  
 EVD1<-EVD
-rm(EVD)
+  rm(EVD)
 load(paste0(WD,Inputfiledir[2],"EVD.rda"))       
 EVD2<-EVD
-rm(EVD)
+  rm(EVD)
 load(paste0(WD,Inputfiledir[3],"EVD.rda"))       
 EVD3<-EVD
-rm(EVD)
+  rm(EVD)
 ETA<-list(
   list(V=EVD1$vectors,d=EVD1$values,model="RKHS"),
   list(V=EVD2$vectors,d=EVD2$values,model="RKHS"),
   list(V=EVD3$vectors,d=EVD3$values,model="RKHS")
-)
-
-
-reps<-20 # !!!
-ntraits<-1  # !!!
-head(Y)  
-y<-yBLUE<-Y[,"BLUE_Trait"] 
+  )
 
 
 #CB=Farmed skinny kelp from giant staircase 
@@ -66,18 +44,55 @@ y<-yBLUE<-Y[,"BLUE_Trait"]
 
 locs<-c("CC","NC","NL","JS","OI","SF","LD","CB")
 
+### for different traits
+traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
+
+reps<-20 # !!!
+ntraits<-length(traits)  # !!!
+  head(Y)  
+#y<-yBLUE<-Y[,"BLUE_Trait"] 
+
+#cor<-matrix(nrow=reps,ncol=ntraits)
+
 cor<-matrix(nrow=reps,ncol=length(locs))
-for (i in 3:reps){
-  setwd(paste0(WD,"OneTime1920/BetweenLoc_output/")) #where to create Rep# folder
-  dir.create(paste0("yBLUEs_Rep",i))
-  WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/yBLUEs_Rep",i,"/")  # the path following WD
+colnames(cor)<-locs
+
+for (j in 1:length(traits)){
+  Coltrait<-traits[j]
+  load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
+  CrossBLUE<-CrossBLUE1
+
+  ##!!!!!!!!!! BLUE is estimated within 2019 and 2020 !
   
-  setwd(WDloc)   #where to create loc# folder
+  for (Yr in c(2019)) {
+    Y1<-Y[Y$Year==Yr,]
+    Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUE,result_column = paste0("BLUE_",Coltrait,"_2019"),lookup_column = "CrossName")  # This is the DwPM
+  } 
+  
+  for (Yr in c(2020)){
+    Y2<-Y[Y$Year==Yr,]
+    Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUE,result_column = paste0("BLUE_",Coltrait,"_2020"),lookup_column = "CrossName") 
+  }
+  
+  Yrbind<-rbind(Y1,Y2)
+  Ydata<-Y   # Save out the original Y, for in case use
+  Y<-Yrbind  # Now Y is updated with its BLUEs from within 2019 and 2020 Year
+  
+  y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
+  yBLUE<-Y[,"BLUE_Trait"]
+  
+for (i in 1:reps){
+  setwd(paste0(WD,"OneTime1920/BetweenLoc_output/")) #where to create Rep# folder
+  dir.create(paste0(Coltrait,"_yBLUEs_Rep",i))
+  WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/",Coltrait,"_yBLUEs_Rep",i,"/")  # the path following WD
+  
+  setwd(WDloc)   #where to create loc# folder # This is where the r is saved
+  
   r<-NULL
   for(loc in locs) {
     
     dir.create(paste0("loc",loc))
-    savepath<-paste0("OneTime1920/BetweenLoc_output/yBLUEs_Rep",i,"/loc",loc,"/")
+    savepath<-paste0("OneTime1920/BetweenLoc_output/",Coltrait,"_yBLUEs_Rep",i,"/loc",loc,"/")
     
     yNA<-y 
     testing<-which(Y$femaParLoc==loc)  # 156 plots
@@ -109,11 +124,22 @@ for (i in 3:reps){
 }
 
 print(r)
+}
 
-rAll<-NULL
+
+rAll_traits_Loc<-NULL
+for (j in 1:length(traits)){
+  Coltrait<-traits[j]
+rAll_Loc<-NULL
 for (i in 1:reps){
-  rAll[[i]]<-read.csv(paste0(WD,"OneTime1920/BetweenLoc_output/yBLUEs_Rep",i,"/","r_1Loc_PP_Rep",i,".csv"),row.names=1)
-}  
+  WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/",Coltrait,"_yBLUEs_Rep",i,"/") 
+  
+  rAll_Loc[[i]]<-read.csv(paste0(WDloc,"r_1Loc_PP_Rep",i,".csv"),row.names=1)
+      }  
+  r_allLoc<-rowMeans(do.call(cbind.data.frame, rAll_Loc))
+  rAll_traits_Loc<-rbind(rAll_traits_Loc,r_allLoc)
+}
+rownames(rAll_traits_Loc)<-traits
 
-rowMeans(do.call(cbind.data.frame, rAll))
+write.csv(rAll_traits_Loc,"cor_BetweenLoc_20Reps_yBLUEsBothYears_5_traits.csv")
 

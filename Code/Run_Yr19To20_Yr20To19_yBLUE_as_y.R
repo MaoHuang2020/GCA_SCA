@@ -1,4 +1,5 @@
 #Run_Between Yr_using_yBLUE_as_y.R
+######## This is only for ONE Trait ---- OLD
 
 #Run_CV_using_yBLUEs as predicted y. Work with 250 plots only
 rm(list=ls())
@@ -30,12 +31,12 @@ library(expss)
 
  for (Yr in c(2019)) {
     Y1<-Y[Y$Year==Yr,]
-    Y1$BLUE_Trait<-vlookup(Y1$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2019",lookup_column = "CrossName")  # This is the DwPM
+    Y1$BLUE_Trait<-vlookup(Y1$plotNo,dict=CrossBLUE,result_column = "BLUE_DwPM_2019",lookup_column = "plotNo")  # This is the DwPM
   } 
 
  for (Yr in c(2020)){
     Y2<-Y[Y$Year==Yr,]
-    Y2$BLUE_Trait<-vlookup(Y2$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2020",lookup_column = "CrossName") 
+    Y2$BLUE_Trait<-vlookup(Y2$plotNo,dict=CrossBLUE,result_column = "BLUE_DwPM_2020",lookup_column = "plotNo") 
 }
 
 Yrbind<-rbind(Y1,Y2)

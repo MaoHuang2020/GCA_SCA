@@ -11,26 +11,6 @@ Y<-Y2 # Both Years
 Y<-droplevels(Y[Y$popChk=="ES",])
 
 
-### Get the "BLUE_Trait"
-load(paste0(WD,"OneTime1920/data/","BLUE_DwPM_2vs1Year_Update03082021.rdata"))
-
-##!!!!!!!!!! BLUE is estimated within 2019 and 2020 !
-
-for (Yr in c(2019)) {
-  Y1<-Y[Y$Year==Yr,]
-  Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2019",lookup_column = "CrossName")  # This is the DwPM
-} 
-
-for (Yr in c(2020)){
-  Y2<-Y[Y$Year==Yr,]
-  Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2020",lookup_column = "CrossName") 
-}
-
-Yrbind<-rbind(Y1,Y2)
-Ydata<-Y
-Y<-Yrbind
-
-
 #plot<-ggplot(data=Y,aes(BLUE_Trait,Year))+
 #  geom_point(aes(color=as.factor(Year)))+ 
 #  geom_line(aes(group=as.factor(Crosses)))
@@ -75,31 +55,91 @@ ETA<-list(
 )
 
 
-reps<-20 # !!!
-ntraits<-1  # !!!
-  head(Y)  
-y<-yBLUE<-Y[,"BLUE_Trait"] # This is the BLUE for DwPM
+pop<-"Yr19to20"  #Yr20to19
+TPYr<-2019      # TPYr   
+NAYr<-2020    ## This is the NAYr 
 
-cor<-matrix(nrow=reps,ncol=ntraits)
+#####!!!
+datafdr<-paste0(WD,"OneTime1920/data/")
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) ##!!!
+WithinYr_Both_dBLUPs<-droplevels(WithinYr_Both_dBLUPs)
+
+identical(as.character(WithinYr_Both_dBLUPs$Row.names),as.character(WithinYr_Both_dBLUPs$plotNo.y))
+
+rownames(WithinYr_Both_dBLUPs)<-WithinYr_Both_dBLUPs$Row.names
+WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,-1]
+  head(WithinYr_Both_dBLUPs)
+
+#WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,!colnames(WithinYr_Both_dBLUPs)%in%c("Crosses.x","Crosses.y","plotNo.x","plotNo.y","Year.x","Year.y")]  
+#CrossBLUE<-WithinYr_Both_dBLUPs ### No need subsetting the TP year here
+#CrossBLUE<-CrossBLUE[,!colnames(CrossBLUE)%in%c("Year.x","Year.y")] ### RM extra cols
+
+traits<-colnames(WithinYr_Both_dBLUPs)[!colnames(WithinYr_Both_dBLUPs)%in%c("Row.names","Crosses.x","Crosses.y","plotNo.x","plotNo.y","Year.x","Year.y")]
+  print(traits)
+##### !!!
+
+reps<-20 # !!!
+ntraits<-length(traits)  # !!!
+  head(Y)  
+
+cor<-matrix(nrow=reps,ncol=length(traits))
+colnames(cor)<-traits
+
+for (j in 1:length(traits)){
+  Coltrait<-traits[j]
+  
+  # load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
+  # CrossBLUE<-CrossBLUE1
+
+  #!!!!!!!!!! USE drBLUP estimated WithinYra 2019 and 2020 !
+  #
+   for (Yr in c(2019)) {
+     Y1<-Y[Y$Year==Yr,]
+  
+     CrossBLUEYr<-WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,]
+      #rownames(CrossBLUEYr)<-CrossBLUEYr$Crosses.x
+     CrossBLUEYr<-CrossBLUEYr[,!colnames(CrossBLUEYr)%in%c("Year.x","Year.y","Crosses.y","plotNo.x","plotNo.y")]
+  
+     Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUEYr,result_column = paste0(Coltrait),lookup_column = "Crosses.x")
+   }
+  
+   for (Yr in c(2020)){
+     Y2<-Y[Y$Year==Yr,]
+  
+     CrossBLUEYr<-WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,]
+      #rownames(CrossBLUEYr)<-CrossBLUEYr$Crosses.x
+     CrossBLUEYr<-CrossBLUEYr[,!colnames(CrossBLUEYr)%in%c("Year.x","Year.y","Crosses.y","plotNo.x","plotNo.y")]
+  
+     Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUEYr,result_column = paste0(Coltrait),lookup_column = "Crosses.x")
+   }
+  
+   Yrbind<-rbind(Y1,Y2)
+     Ydata<-Y   # Save out the original Y, for in case use
+     Y<-Yrbind  # Now Y is updated with its BLUEs from within 2019 and 2020 Year
+  
+
+    # Y$BLUE_Trait<-expss::vlookup(Y$plotNo,dict=CrossBLUE,result_column = paste0(Coltrait),lookup_column = "row.names") ### !!!
+    #   head(Y)
+    y<-yBLUE<-Y[,"BLUE_Trait"]   # phenotypes column  !!!
 
 for (i in 1:reps){
-  setwd(paste0(WD,"OneTime1920/Yr20to19_output/"))
+  setwd(paste0(WD,"OneTime1920/",pop,"_output/"))
   
-  dir.create(paste0("yBLUEnoLocRep",i))
-  savepath<-paste0("OneTime1920/Yr20to19_output/yBLUEnoLocRep",i,"/")
+  dir.create(paste0(Coltrait,"_ydrBLUP_noLocRep",i))
+  savepath<-paste0("OneTime1920/",pop,"_output/",Coltrait,"_ydrBLUP_noLocRep",i,"/")
   
   yNA<-y
   # print(fold)
-  testing<-which(Y$Year==2019)  ## PP year
+  testing<-which(Y$Year==NAYr)  ## PP year
   yNA[testing]<-NA
   
   fm<-BGLR::BGLR(y=yNA,
                  ETA=ETA,
                  nIter=80000,
                  burnIn=60000,
-                 saveAt=paste0(WD,savepath,"Yr20To19_rep",i),
+                 saveAt=paste0(WD,savepath,pop,"_rep",i),
                  verbose=TRUE)
-  save(fm,file=paste0(WD,savepath,"fm_Yr20To19_rep",i,".rda"))
+  save(fm,file=paste0(WD,savepath,"fm_",pop,"_rep",i,".rda"))
   
   yPred<-fm$ETA[[3]]$u+fm$ETA[[2]]$u+fm$ETA[[1]]$u  #SCA+GCA2+GCA1
   predict<-data.frame(testing,
@@ -110,16 +150,15 @@ for (i in 1:reps){
                       popChk=Y[c(testing),"popChk"],
                       Year=Y[c(testing),]$Year)
   predict<-droplevels(predict)
-  cor[i,]<-cor(predict$yBLUE,predict$yPred,use="complete")
-  write.table(predict,file=paste0(WD,savepath,"predictions_rep",i,".csv"),row.names=FALSE,sep=",") 
+  cor[i,j]<-cor(predict$yBLUE,predict$yPred,use="complete")
+  write.table(predict,file=paste0(WD,savepath,Coltrait,"_predictions_rep",i,".csv")) 
+}
+  rm(fm) 
+  unlink("*.dat")
+  print(colMeans(cor))  # All 283 individuals from tmp   #noLOC 0.2696567
 }
 
-
-rm(fm) 
-unlink("*.dat")
-
-colMeans(cor)  # All 283 individuals from tmp   #noLOC 0.2696567
-write.csv(cor,"cor_Yr20_predict_19_using_250ES_plots_NoFMLoc_yBLUEas_y.csv")
+write.csv(cor,paste0("cor_",length(traits),"_traits_",pop,"_using_250ES_plots_NoFMLoc_ydrBLUP_as_y.csv"))
 
 
 ## This is to confirm the cors using "predict" data
@@ -131,4 +170,25 @@ write.csv(cor,"cor_Yr20_predict_19_using_250ES_plots_NoFMLoc_yBLUEas_y.csv")
 # }
 # colMeans(cor2) 
 # write.csv(cor2,"cor_Yr19_predict_20_using_250ES_plots_NoFMLoc_yBLUEas_y_confirm.csv")
+
+
+
+# ### Get the "BLUE_Trait"
+# load(paste0(WD,"OneTime1920/data/","BLUE_DwPM_2vs1Year_Update03082021.rdata"))
+# 
+# ##!!!!!!!!!! BLUE is estimated within 2019 and 2020 !
+# 
+# for (Yr in c(2019)) {
+#   Y1<-Y[Y$Year==Yr,]
+#   Y1$BLUE_Trait<-expss::vlookup(Y1$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2019",lookup_column = "CrossName")  # This is the DwPM
+# } 
+# 
+# for (Yr in c(2020)){
+#   Y2<-Y[Y$Year==Yr,]
+#   Y2$BLUE_Trait<-expss::vlookup(Y2$Crosses,dict=CrossBLUE,result_column = "BLUE_DwPM_2020",lookup_column = "CrossName") 
+# }
+# 
+# Yrbind<-rbind(Y1,Y2)
+# Ydata<-Y
+# Y<-Yrbind
 

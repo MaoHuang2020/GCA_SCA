@@ -440,91 +440,221 @@ print(mean(r)) #0.07600304
 #### Making BLUEs within Year and between Years
   rm(list=ls())
   WD<-"/Users/maohuang/Desktop/Kelp/GCA_SCA/" # local
+  datafdr<-"/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/data/"
+    
+ # load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot-- OLD
+  load(paste0(datafdr,"dataNHpi_withChk_3_sets_PhotoScore23_UpdateAsh_0309_2021.rdata"))  ## Plot -- Updated Ash
+  load(paste0(datafdr,"dataNHim_withChk_3_sets_PhotoScore0123.rdata"))  ## Individual
   
- # load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
-  load(paste0("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/data/dataNHpi_withChk_3_sets_PhotoScore23_UpdateAsh_0309_2021.rdata"))
   dataNHpi<-dataNHpiBoth_C  ##!!!!!
   
-  library(lme4)
   exptlSP <- as.character(dataNHpi$popChk) == "ES"
   dataNHpi$entry <- as.character(dataNHpi$popChk)
   dataNHpi$entry[exptlSP] <- as.character(dataNHpi$plotNo[exptlSP])
   dataNHpi$group <- as.factor(ifelse(exptlSP, 1, 0))
   
-  library(lmerTest) # can give p-values
+  for (col in c( "line", "block","popChk","group","entry","Year")){ 
+    dataNHpi[,col] <- factor(dataNHpi[,col])}
+  dataNHpi<-droplevels(dataNHpi)
+  traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
   
-  for (col in c( "line", "block","popChk","group","entry","Year")) 
-    dataNHpi[,col] <- factor(dataNHpi[,col])
-    dataNHpi<-droplevels(dataNHpi)
-    
-traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
+  
+  #### Individual level to get their experimental factors.
+  #### The dataNHpi is already filtered for their phenotypic PHOTO SCORE (>2)
+  dataNHim<-dataNHimboth_C
+  dataNHim$line<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "line")
+  dataNHim$block<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "block")
+  dataNHim$Year<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "Year")
+  dataNHim$popChk<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "popChk")
+  dataNHim$Crosses<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "Crosses")
+  dataNHim$PhotoScore<-expss::vlookup(dataNHim$plotNo,dict=dataNHpi,lookup_column = "plotNo",result_column = "PhotoScore")
+  dataNHim<-dataNHim[which(dataNHim$PhotoScore >1),]  # 3969 rows with PhotoScore >1
+  str(dataNHim)
+  
+  traits<-c("bladeLength","bladeMaxWidth","bladeThickness","stipeLength","stipeDiameter")
+  
+  for (col in traits){
+    dataNHim[,col]<-as.numeric(dataNHim[,col])}
+  
+### Both Years
+dataNH<-dataNHpi   ### !!!!!
 
-CrossBLUE<-NULL
+dataNH<-dataNHim   ### !!!!!
+
+###
+library(sommer)
+NumCrosses<-length(unique(dataNH$Crosses))
+dBLUPs<-BLUPs<-matrix(nrow=NumCrosses,ncol=length(traits))
+H2<-NULL
+convInfo<-vector()
 for (j in 1:length(traits)){
   Coltrait<-traits[j]
-  dataNHpi$Trait<-dataNHpi[,Coltrait]  ### !!!!! TraitBLUE
-  data<-dataNHpi
+  dataNH$Trait<-dataNH[,Coltrait]  ### !!!!! TraitBLUE
+  data<-dataNH
+      # #for (Year in c(2019,2020)){
+      #   i=Year-2018
+      #   data<-dataNH[dataNH$Year==Year,]
+  data<-droplevels(data)
+    
+tmp.mod <- mmer(fixed = Trait ~ popChk+Year, 
+                random = ~block + line + block:line+Crosses, 
+                data = data)
 
-#### Both Years    
-  fitAug <- lm(Trait ~ Year+ line*Year+ block*Year+ group +Crosses , data=data) # Crosses:group
-    print(rownames(summary(fitAug)$coef))
-    print(colnames(summary(fitAug)$coef))
-  CrossBLUE1<-summary(fitAug)$coef[grep("x",rownames(summary(fitAug)$coef)),"Estimate"]  # "x": xtract the Crosses
-    print(str(CrossBLUE1))
-  CrossBLUE1<-as.data.frame(CrossBLUE1)
-  library(stringr)
-  CrossBLUE1$CrossName<-str_replace(rownames(CrossBLUE1),"Crosses","")
-    head(CrossBLUE1)
-  colnames(CrossBLUE1)[colnames(CrossBLUE1)=="CrossBLUE1"]<-paste0("BLUE_",Coltrait,"_2Yrs")
-  CrossBLUE1$plotNo<-expss::vlookup(CrossBLUE1$CrossName,dict=data,result_column = "plotNo",lookup_column="Crosses")
-  CrossBLUE1$Year<-expss::vlookup(CrossBLUE1$CrossName,dict=data,result_column = "Year",lookup_column="Crosses")
-  
-  head(CrossBLUE1)
+PEV <- diag(tmp.mod$PevU$`Crosses`$Trait)
+varG <- as.numeric(tmp.mod$sigma$`Crosses`)
+tmp.BLUPs <- tmp.mod$U$`Crosses`$Trait  ##blups
+names(tmp.BLUPs)<-str_replace(names(tmp.BLUPs),"Crosses","")
+tmp.dBLUPs<-tmp.BLUPs / (1 - PEV/varG)  ##deregressed blups checks will have "inf" values
+  print(identical(names(tmp.BLUPs),names(tmp.dBLUPs)))
+CheckCrosses<-unique(droplevels(data[!data$popChk=="ES",]$Crosses))  ## 4 Crosses
+  CheckCrosses
+tmp.BLUPs[names(tmp.BLUPs)%in%CheckCrosses]<-NA
+tmp.dBLUPs[names(tmp.dBLUPs)%in%CheckCrosses]<-NA
 
-  which(!unique(droplevels(dataNHpiBoth_C)$Crosses)%in%CrossBLUE1$CrossName)
-  dataNHpiBoth_C[c(1,205,247),]  ####??????Why these three crosses got thrown out??????
-  data[c(1,205,247),]
 
-  
-## Within Year BLUEs,
-library(stringr)
-CrossBLUE2<-NULL
-for (Year in c(2019,2020)){
-  i=Year-2018
-  data<-droplevels(dataNHpi[dataNHpi$Year==Year,])
-  fitAug1 <- lm(Trait ~ line+ block+ popChk+Crosses , data=data) # Crosses:group
-  CrossBLUE2[[i]]<-summary(fitAug1)$coef[grep("x",rownames(summary(fitAug1)$coef)),"Estimate"]
-  CrossBLUE2[[i]]<-as.data.frame(CrossBLUE2[[i]])
-  CrossBLUE2[[i]]$CrossName<-str_replace(rownames(CrossBLUE2[[i]]),"Crosses","")
-  head(CrossBLUE2[[i]])
-  colnames(CrossBLUE2[[i]])[colnames(CrossBLUE2[[i]])=="CrossBLUE2[[i]]"]<-paste0("BLUE_",Coltrait,"_1Year")
+BLUPs[,j] <- tmp.BLUPs  
+dBLUPs[,j] <- tmp.dBLUPs  
+
+#H2 <- rbind(H2, pin(tmp.mod, h2 ~ V2 / ( V2 + V4)))
+H2<-rbind(H2,h2.fun(tmp.mod,data=data,gTerm="Crosses"))
+convInfo[j] <- tmp.mod$convergence
 }
 
-CrossBLUE1$Name1<-expss::vlookup(CrossBLUE1$CrossName,dict=CrossBLUE2[[1]],result_column = paste0("BLUE_",Coltrait,"_1Year"),lookup_column = "CrossName")
-CrossBLUE1$Name2<-expss::vlookup(CrossBLUE1$CrossName,dict=CrossBLUE2[[2]],result_column = paste0("BLUE_",Coltrait,"_1Year"),lookup_column = "CrossName")
-colnames(CrossBLUE1)[colnames(CrossBLUE1)=="Name1"]<-paste0("BLUE_",Coltrait,"_2019")
-colnames(CrossBLUE1)[colnames(CrossBLUE1)=="Name2"]<-paste0("BLUE_",Coltrait,"_2020")
+rownames(H2)<-traits
+  H2
+  convInfo
+save(H2,convInfo,file=paste0(datafdr,"Plots_sommer_h2.fuc_convergence.Rdata"))
+colnames(BLUPs)<-colnames(dBLUPs)<-traits
+rownames(BLUPs)<-rownames(dBLUPs)<-names(tmp.dBLUPs)
+  head(BLUPs)
+  head(dBLUPs)
 
-save(CrossBLUE1,file=paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
+#RM the checks crosses
+BLUPs<-BLUPs[!rownames(BLUPs)%in%CheckCrosses,]    
+dBLUPs<-dBLUPs[!rownames(dBLUPs)%in%CheckCrosses,]    
 
-CrossBLUE[[j]]<-CrossBLUE1
-}
-  save(CrossBLUE,file=paste0(WD,"OneTime1920/data/","AllTraits_CrossBLUE_list.rdata"))
+write.csv(BLUPs,dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plotlevel_OverTwoYears.Rdata"))
+write.csv(BLUPs,dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_Individuallevel_OverTwoYears.Rdata"))
 
 
 
-  head(CrossBLUE1)
-######Check the BLUEs
-Y<-Y2
-commonX<-Y[Y$Year==2019,]$Crosses[which(Y[Y$Year==2019,]$Crosses%in%Y[Y$Year==2020,]$Crosses)]
-CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2019
-CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2020
-cor(CrossBLUE$BLUE_DwPM_2Yrs,CrossBLUE$BLUE_DwPM_2019,use="complete") #0.9197
-cor(CrossBLUE$BLUE_DwPM_2Yrs,CrossBLUE$BLUE_DwPM_2020,use="complete") #0.9189751
-cor(CrossBLUE$BLUE_DwPM_2019,CrossBLUE$BLUE_DwPM_2020,use="complete") #-0.6157659
 
+
+#RM the check crosses  #grepl("ES",names(tmp.BLUPs)) & 
+#names(tmp.BLUPs2)<-str_replace(names(tmp.BLUPs2),":popChkES","")
+
+
+
+# drBLUPs2<-drBLUPs[!grepl("SL18-ME",names(drBLUPs))]
+#   identical(names(tmp.BLUPs2),names(drBLUPs2))
+#   cor(tmp.BLUPs2,drBLUPs2,use="pairwise.complete.obs")
+# 
+#   BLUP_BLUE<-as.data.frame(cbind(tmp.BLUPs2,drBLUPs2))
+# 
+#   library(lme4)
+#   library(lmerTest) # can give p-values
+#   fitAug3<-lmer(Trait~popChk+(1|line)+(1|block)+(1|line:block)+Crosses,data=data)
+# 
+#   BLUE<-summary(fitAug2)$coef[grep("x",rownames(summary(fitAug3)$coef)),"Estimate"]
+#   BLUE<-as.data.frame(BLUE)
+#   BLUP_BLUE$BLUE<-expss::vlookup(rownames(BLUP_BLUE),dict=BLUE,lookup_column ="row.names",result_column = "BLUE" )
+#   # CrossBLUE<-NULL
+#   head(BLUP_BLUE)
+#   cor(BLUP_BLUE$tmp.BLUPs2,BLUP_BLUE$BLUE,use="pairwise.complete.obs")  # 0.97
+
+# ## Use Crosses or Crosses:popChk, the BLUPs are almost the same: r=0.999
+
+# #### Both Years    
+# #   fitAug <- lm(Trait ~ Year+ line*Year+ block*Year+ group +Crosses , data=data) # Crosses:group
+# #     print(rownames(summary(fitAug)$coef))
+# #     print(colnames(summary(fitAug)$coef))
+# #   CrossBLUE1<-summary(fitAug)$coef[grep("x",rownames(summary(fitAug)$coef)),"Estimate"]  # "x": xtract the Crosses
+# #     print(str(CrossBLUE1))
+# #   CrossBLUE1<-as.data.frame(CrossBLUE1)
+# #   CrossBLUE1$CrossName<-stringr::str_replace(rownames(CrossBLUE1),"Crosses","")
+# #     head(CrossBLUE1)
+# #   colnames(CrossBLUE1)[colnames(CrossBLUE1)=="CrossBLUE1"]<-paste0("BLUE_",Coltrait,"_2Yrs")
+# #   CrossBLUE1$plotNo<-expss::vlookup(CrossBLUE1$CrossName,dict=data,result_column = "plotNo",lookup_column="Crosses")
+# #   CrossBLUE1$Year<-expss::vlookup(CrossBLUE1$CrossName,dict=data,result_column = "Year",lookup_column="Crosses")
+# #   
+# #   head(CrossBLUE1)
+# # 
+# #   which(!unique(droplevels(dataNHpiBoth_C)$Crosses)%in%CrossBLUE1$CrossName)
+# #   dataNHpiBoth_C[c(1,205,247),]  ####??????Why these three crosses got thrown out??????
+# #   data[c(1,205,247),]
+# # 
+# # ## Within Year BLUEs,
+# # library(stringr)
+# # CrossBLUE2<-NULL
+
+# #   # fitAug1 <- lm(Trait ~ line+ block+ popChk+Crosses, data=data,na.action="na.omit") # Crosses:group
+# #   # CrossBLUE2[[i]]<-summary(fitAug1)$coef[grep("x",rownames(summary(fitAug1)$coef)),"Estimate"]
+# #   # CrossBLUE2[[i]]<-as.data.frame(CrossBLUE2[[i]])
+# #   # CrossBLUE2[[i]]$CrossName<-stringr::str_replace(rownames(CrossBLUE2[[i]]),"Crosses","")
+# #   # head(CrossBLUE2[[i]])
+# #   # colnames(CrossBLUE2[[i]])[colnames(CrossBLUE2[[i]])=="CrossBLUE2[[i]]"]<-paste0("BLUE_",Coltrait,"_1Year")
+# }
+# # 
+# # CrossBLUP2<-NULL
+# 
+# data[!is.na(data$Trait),c("Crosses","Trait","Year","AshFreedryWgtPerM","Ash.Free..","dryWgtPerM",
+#                           "wetWgtPerM","percDryWgt","Ash..Celignis.","Ash..WHOI.","Ash","AshFDwPM")]
+# fitAug2<-lmer(Trait~popChk+(1|line:block)+(1|Crosses),data=data) #(1|line)+(1|block)+
+# Ran<-ranef(fitAug2)
+# ### De-regress in lmer
+# BLUPs<-Ran$Crosses  # 47 unique crosses
+# lmerPEV<-getME(fitAug2,name="sigma")
+# 
+# VC<-as.data.frame(print(VarCorr(fitAug2)))
+# 
+# TotalGVar<-VC[VC$grp=="Crosses","vcov"]
+
+# deReBLUPs<-BLUPs/(1-(lmerPEV/TotalGVar))
+# 
+# 
+# #fitAug3<-lmer(Trait~popChk+(1|line)+(1|block)+(1|line:block)+Crosses,data=data)
+# 
+# 
+# CrossBLUE3[[i]]<-summary(fitAug2)$coef[grep("x",rownames(summary(fitAug3)$coef)),"Estimate"]
+# CrossBLUE3[[i]]<-as.data.frame(CrossBLUE3[[i]])
+# CrossBLUE3[[i]]$CrossName<-stringr::str_replace(rownames(CrossBLUE3[[i]]),"Crosses","")
+# 
+# CrossBLUE3[[i]]$BLUElm<-expss::vlookup(CrossBLUE3[[i]]$CrossName,dict=CrossBLUE2[[i]],lookup_column = "CrossName",result_column = "BLUE_AshFDwPM_1Year")
+# #### Read in the BLUPs from rrBLUP
+# CrossBLUE3<-CrossBLUE3[[i]]
+# CrossBLUE3$BLUElm_onlyInterlineblock<-expss::vlookup(CrossBLUE3$CrossName,dict=CrossBLUE3[[i]],lookup_column = "CrossName",result_column = "CrossBLUE3[[i]]")
+# 
+# cor(CrossBLUE3[,1],CrossBLUE3[,3],use="complete")
+# cor(CrossBLUE3[,1],CrossBLUE3[,4],use="complete")
+# 
+# formula<-Trait~popChk+Crosses
+# X<-model.matrix(formula,data=data)
+# 
+# CrossBLUE1$Name1<-expss::vlookup(CrossBLUE1$CrossName,dict=CrossBLUE2[[1]],result_column = paste0("BLUE_",Coltrait,"_1Year"),lookup_column = "CrossName")
+# CrossBLUE1$Name2<-expss::vlookup(CrossBLUE1$CrossName,dict=CrossBLUE2[[2]],result_column = paste0("BLUE_",Coltrait,"_1Year"),lookup_column = "CrossName")
+# colnames(CrossBLUE1)[colnames(CrossBLUE1)=="Name1"]<-paste0("BLUE_",Coltrait,"_2019")
+# colnames(CrossBLUE1)[colnames(CrossBLUE1)=="Name2"]<-paste0("BLUE_",Coltrait,"_2020")
+# 
+# save(CrossBLUE1,file=paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
+# 
+# CrossBLUE[[j]]<-CrossBLUE1
+# }
+#   save(CrossBLUE,file=paste0(WD,"OneTime1920/data/","AllTraits_CrossBLUE_list.rdata"))
+# 
+# 
+# 
+#   head(CrossBLUE1)
+# ######Check the BLUEs
+# Y<-Y2
+# commonX<-Y[Y$Year==2019,]$Crosses[which(Y[Y$Year==2019,]$Crosses%in%Y[Y$Year==2020,]$Crosses)]
+# CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2019
+# CrossBLUE[CrossBLUE$CrossName%in%commonX,]$BLUE_DwPM_2020
+# cor(CrossBLUE$BLUE_DwPM_2Yrs,CrossBLUE$BLUE_DwPM_2019,use="complete") #0.9197
+# cor(CrossBLUE$BLUE_DwPM_2Yrs,CrossBLUE$BLUE_DwPM_2020,use="complete") #0.9189751
+# cor(CrossBLUE$BLUE_DwPM_2019,CrossBLUE$BLUE_DwPM_2020,use="complete") #-0.6157659
+# 
 save(CrossBLUE,file=paste0(WD,"OneTime1920/data/","BLUE_DwPM_2vs1Year_Update03082021.rdata"))
-######
+# ######
  
   
   

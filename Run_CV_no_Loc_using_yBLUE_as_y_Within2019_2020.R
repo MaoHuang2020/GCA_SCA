@@ -14,8 +14,13 @@ head(Y2)
 Y<-Y2 # Both Years
 Y<-droplevels(Y[Y$popChk=="ES",])
 
-load(paste0(WD,"OneTime1920/data/","outCovComb_dip_0116_2021.Rdata"))
+library(BGLR)
 
+
+
+########### Run only Once !!!!!!!!!1
+
+load(paste0(WD,"OneTime1920/data/","outCovComb_dip_0116_2021.Rdata"))
 #write.csv(outCovComb4_dipOrder,here("OneTime1920/data","A.csv"))
  mm.file<- paste0(WD,"OneTime1920/data/","A.csv")          # path to covariates file
 
@@ -53,6 +58,17 @@ sampleCV<-matrix(nrow=nrow(Y),ncol=500)
 save(sampleCV,file=paste0(WD,"OneTime1920/data/sampleCV_Yr",Yr,"_122Indiv_0312_2021.Rdata"))
  ###### One Time
 
+############## Run only Once !!!!!!!!!
+
+
+
+Yr<-2019  ##!!!
+folder<-"OneTime1920/Yr19Only/"
+
+
+Yr<-2020
+folder<-"OneTime1920/Yr20Only/"
+
 ### Load Sample file
 load(paste0(WD,"OneTime1920/data/sampleCV_Yr",Yr,"_122Indiv_0312_2021.Rdata"))
 
@@ -60,13 +76,13 @@ Inputfiledir<-c(paste0(folder,"GP1/"),paste0(folder,"GP2/"),paste0(folder,"GP1P2
 
 load(paste0(WD,Inputfiledir[1],"EVD.rda"))  
 EVD1<-EVD
-rm(EVD)
+  rm(EVD)
 load(paste0(WD,Inputfiledir[2],"EVD.rda"))       
 EVD2<-EVD
-rm(EVD)
+  rm(EVD)
 load(paste0(WD,Inputfiledir[3],"EVD.rda"))       
 EVD3<-EVD
-rm(EVD)
+  rm(EVD)
 ETA<-list(
   list(V=EVD1$vectors,d=EVD1$values,model="RKHS"),
   list(V=EVD2$vectors,d=EVD2$values,model="RKHS"),
@@ -74,8 +90,18 @@ ETA<-list(
 )
 
 
-traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
+#####!!!
+datafdr<-paste0(WD,"OneTime1920/data/")
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) ##!!!
+rownames(WithinYr_Both_dBLUPs)<-WithinYr_Both_dBLUPs$Row.names
+WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,-1]
 
+CrossBLUE<-WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,] ### Subset the Yr
+CrossBLUE<-CrossBLUE[,!colnames(CrossBLUE)%in%c("Year.x","Year.y")] ### RM extra cols
+
+traits<-colnames(CrossBLUE)
+  print(traits)
+##### !!!
 
 sampleCV<-sampleCV
 folds   <- 1:10 
@@ -86,31 +112,25 @@ colnames(cor)<-traits
 
 for (j in 1:length(traits)){
   Coltrait<-traits[j]
-  load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
-  CrossBLUE<-CrossBLUE1
-  Y$BLUE_Trait<-expss::vlookup(Y$Crosses,dict=CrossBLUE,result_column = paste0("BLUE_",Coltrait,"_2Yrs"),lookup_column = "CrossName") ### This is the DwPM
+
+  Y$BLUE_Trait<-expss::vlookup(Y$Crosses,dict=CrossBLUE,result_column = paste0(Coltrait),lookup_column = "row.names") ### !!!
   head(Y)
   
   head(Y)
   dim(Y)
   
-  #Y<-droplevels(Y[Y$Year==2019,])   # Within Year
-  
-  #Y<-droplevels(Y[Y$Year==2020,])   # Within Year
-  
-  Y<-Y   # Between Year
+  Y<-droplevels(Y[Y$Year==Yr,])   # Within Year !!
+
   y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
-  # gid<-Y[,"Crosses"]   # Crosses
+
   yBLUE<-Y[,"BLUE_Trait"] # This is the BLUE for DwPM
   
   setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
-  
 
-  
   for (i in 1:reps){
     setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
-    dir.create(paste0(Coltrait,"_OnlyYr",Yr,"_yBLUEnoLocRep",i))
-    savepath<-paste0("OneTime1920/Alldata_CV_output/",Coltrait,"_OnlyYr",Yr,"_yBLUEnoLocRep",i,"/")  # the path within WD!
+    dir.create(paste0(Coltrait,"_OnlyYr",Yr,"_ydrBLUPsnoLocRep",i))
+    savepath<-paste0("OneTime1920/Alldata_CV_output/",Coltrait,"_OnlyYr",Yr,"_ydrBLUPsnoLocRep",i,"/")  # the path within WD!
     
     tmp<-NULL
     for (fold in folds){
@@ -153,4 +173,4 @@ for (j in 1:length(traits)){
   
 }
 
-write.csv(cor,paste0("cor_CV_no_Loc_OnlyYr",Yr,"_data_",length(traits),"Traits.csv"))
+write.csv(cor,paste0("cor_CV_no_Loc_OnlyYr",Yr,"_ydrBLUPs_data_",length(traits),"Traits.csv"))

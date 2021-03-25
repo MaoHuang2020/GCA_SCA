@@ -1,7 +1,9 @@
 #Run_CV_using_yBLUEs as predicted y. Work with 250 plots only
+#Both Years !!
 rm(list=ls())
 
 WD<-"/local/workdir/mh865/GCA_SCA/"  # run in terminal
+datafdr<-paste0(WD,"OneTime1920/data/")
 
 load(paste0(WD,"OneTime1920/data/","dataNHpi_withChk_3_sets_PhotoScore23.rdata"))   ## Plot
 #load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/dataNHim_withChk_3_sets_PhotoScore0123.rdata")  ## Indi
@@ -22,6 +24,8 @@ CalGCA_noChk(Y=Y,mm.file=mm.file,colIDy = which(colnames(Y)=="malePar"),colNam =
 CalSCA(G1.file=paste0(WD,"OneTime1920/GP1/250Individual/","G.rda"),
        G2.file=paste0(WD,"OneTime1920/GP2/250Individual/","G.rda"),
        savefileDir="OneTime1920/GP1P2/250Individual/")
+
+
 ############# Run it only once
 
 #write.csv(outCovComb4_dipOrder,here("OneTime1920/data","A.csv"))
@@ -29,6 +33,16 @@ CalSCA(G1.file=paste0(WD,"OneTime1920/GP1/250Individual/","G.rda"),
 
 ### This is to only get the calc GCA and SCA functions
 # source(paste0(WD,"OneTime1920/code/","BGLR_functions_noFMLoc.R")) # !!!terminal
+
+# #### Run it once
+# sampleCV<-matrix(nrow=nrow(Y),ncol=500)
+#  for (n in 1:500){
+#    sets<-rep(1:10,25)  #250 ES ones
+#    sampleCV[,n]<-sets[order(runif(nrow(Y)))]
+#  }
+# save(sampleCV,file="sampleCV_250Indiv_0303_2021.Rdata")
+
+#  ###### One Time
 
 ### Get the "BLUE_Trait"
 
@@ -53,9 +67,17 @@ ETA<-list(
   list(V=EVD3$vectors,d=EVD3$values,model="RKHS")
 )
 
+#####!!!
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
+rownames(Both_dBLUPs)<-Both_dBLUPs$Row.names
+Both_dBLUPs<-Both_dBLUPs[,-1]
+traits<-colnames(Both_dBLUPs)
+  print(traits)
+CrossBLUE<-Both_dBLUPs ##!!!
+##### !!!
 
-traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
 load(paste0(WD,"OneTime1920/Alldata_CV_output/sampleCV_250Indiv_0303_2021.Rdata"))
+
 sampleCV<-sampleCV
 folds   <- 1:10 
 reps<-20 # !!!
@@ -63,40 +85,32 @@ ntraits<- length(traits) # !!!
 cor<-matrix(nrow=reps,ncol=ntraits)
 colnames(cor)<-traits
 
+
+
 for (j in 1:length(traits)){
   Coltrait<-traits[j]
-  load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
-  CrossBLUE<-CrossBLUE1
-  Y$BLUE_Trait<-expss::vlookup(Y$Crosses,dict=CrossBLUE,result_column = paste0("BLUE_",Coltrait,"_2Yrs"),lookup_column = "CrossName") ### This is the DwPM
+  #load(paste0(WD,"OneTime1920/data/","BLUE_",Coltrait,"_2vs1Year_Update_03112021.rdata"))
+  #CrossBLUE<-CrossBLUE1
+
+    
+  Y$BLUE_Trait<-expss::vlookup(Y$Crosses,dict=CrossBLUE,result_column = paste0(Coltrait),lookup_column = "row.names") ### This is the DwPM
   head(Y)
   
   head(Y)
   dim(Y)
   
-  #Y<-droplevels(Y[Y$Year==2019,])   # Within Year
-  
-  #Y<-droplevels(Y[Y$Year==2020,])   # Within Year
-  
-  Y<-Y   # Between Year
+  Y<-Y   # Between Year !!!!
   y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
-  # gid<-Y[,"Crosses"]   # Crosses
+
   yBLUE<-Y[,"BLUE_Trait"] # This is the BLUE for DwPM
   
   setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
-  
-  # #### Run it once
-  # sampleCV<-matrix(nrow=nrow(Y),ncol=500)
-  #  for (n in 1:500){
-  #    sets<-rep(1:10,25)  #250 ES ones
-  #    sampleCV[,n]<-sets[order(runif(nrow(Y)))]
-  #  }
-  # save(sampleCV,file="sampleCV_250Indiv_0303_2021.Rdata")
-  #  ###### One Time
+
 
   for (i in 1:reps){
     setwd(paste0(WD,"OneTime1920/Alldata_CV_output/"))
-    dir.create(paste0(Coltrait,"_yBLUEnoLocRep",i))
-    savepath<-paste0("OneTime1920/Alldata_CV_output/",Coltrait,"_yBLUEnoLocRep",i,"/")  # the path within WD!
+    dir.create(paste0(Coltrait,"_ydBLUPsnoLocRep",i))
+    savepath<-paste0("OneTime1920/Alldata_CV_output/",Coltrait,"_ydBLUPsnoLocRep",i,"/")  # the path within WD!
     
     tmp<-NULL
     for (fold in folds){
@@ -139,7 +153,12 @@ for (j in 1:length(traits)){
   
 }
 
-write.csv(cor,"10foldCV_cor2_using_250ES_plots_NoFMLoc_yBLUEas_y_5_Traits.csv")
+write.csv(cor,"10foldCV_cor2_using_250ES_BothYear_Indiv_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
+
+# write.csv(cor,"10foldCV_cor2_using_2020y_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
+# write.csv(cor,"10foldCV_cor2_using_2019y_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
+# write.csv(cor,"10foldCV_cor2_using_BothYear_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv"))
+
 
 #plot<-ggplot(data=Y,aes(BLUE_Trait,Year))+
 #  geom_point(aes(color=as.factor(Year)))+ 
