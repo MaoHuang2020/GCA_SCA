@@ -174,4 +174,5 @@ for (j in 1:length(traits)){
   
 }
 
+write.csv(colMeans(cor),paste0(paste0("cor_CV_no_Loc_OnlyYr",Yr,"_ydrBLUPs_data_",length(traits),"Traits_Mean.csv")))
 write.csv(cor,paste0("cor_CV_no_Loc_OnlyYr",Yr,"_ydrBLUPs_data_",length(traits),"Traits.csv"))

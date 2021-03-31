@@ -206,8 +206,39 @@ Both_dBLUPs<-merge(Plot_dBLUPs,Indi_dBLUPs,by.x="row.names",by.y="row.names",all
   
 save(Both_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata"))
 
-## Compare the BLUPs from BothYears vs WithinYear (cor= 0.97-0.98)
+## Compare the BLUPs from BothYears vs WithinYear (cor ranged= 0.97-0.98)
 both<-merge(Plot_dBLUPs,WithinYr_Plot_dBLUPs,by.x="row.names",by.y="row.names",all.x=TRUE)
 for (i in 1:5){
   print(cor(both[,(i+1)],both[,(i+1+5)],use="complete"))
 }
+
+#######
+#### Summarize the GS TP size--- BothYr
+datafdr<-paste0(WD,"OneTime1920/data/")
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
+
+size<-NULL
+traits<-colnames(Both_dBLUPs)[-1]
+for (t in 1:length(traits)){
+  size<-c(size,sum(!is.na(Both_dBLUPs[,traits[t]])|!is.nan(Both_dBLUPs[,traits[t]])))
+}
+names(size)<-traits
+#######
+#######
+
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata"))
+
+
+WithinYrSize<-NULL
+for (Yr in c(2019,2020)){
+  dataf<-droplevels(WithinYr_Both_dBLUPs[WithinYr_Both_dBLUPs$Year.x==Yr,])
+  rmcols<-c("Row.names","Year.x","plotNo.x","Crosses.x","Year.y","plotNo.y","Crosses.y")
+  traits<-colnames(dataf)[!colnames(dataf)%in%rmcols]
+  size<-NULL
+  for (t in 1:length(traits)){
+    size<-c(size,sum(!is.na(dataf[,traits[t]])|!is.nan(dataf[,traits[t]])))
+  }
+  names(size)<-traits
+  WithinYrSize<-rbind(WithinYrSize,size)
+}
+

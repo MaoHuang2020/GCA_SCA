@@ -83,15 +83,22 @@ source("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/Code_
  #   df
  # }
  
- Trait<-"DwPM"
- Y<-data
+# Trait<-"DwPM"
+ 
+###### 
+ for (t in c("dryWgtPerM","AshFDwPM")){
+    dataNH$Trait<-ifelse(dataNH$Year==2019,dataNH[,t]*sqrt(10),dataNH[,t])  # Yr1 phenotype * sqrt(10)
+    colnames(dataNH)[colnames(dataNH)=="Trait"]<-paste0(t,"_sqrt10")
+   }
+ 
+ 
+ Y<-dataNH
 
  is.positive.definite(outCovComb4_dipOrder)
    outCovComb4_dipOrder[1:4,1:5]
 
  Amat<-outCovComb4_dipOrder[rownames(outCovComb4_dipOrder)%in%as.character(Y$Crosses),colnames(outCovComb4_dipOrder)%in%as.character(Y$Crosses)]
 
- 
  
  snpRelMat<-Amat
  Gsnp=solve(snpRelMat+diag(1e-6,length(snpRelMat[,1]),length(snpRelMat[,1])))
@@ -103,7 +110,7 @@ source("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/Code_
  attr(Gsnp, "INVERSE")=TRUE
  
  # running two different GxE models
- modMTM <- asreml(cbind(wetWgtPlot,wetWgtPerM,percDryWgt,dryWgtPerM,AshFreedryWgtPerM,densityBlades) ~ trait, 
+ modMTM <- asreml(cbind(wetWgtPerM,percDryWgt,dryWgtPerM,densityBlades) ~ trait, 
                   random= ~ us(trait):vm(Crosses,Gsnp),
                   residual = ~id(units):us(trait),
                   data = Y, maxiter=50, trace=TRUE)

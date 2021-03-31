@@ -106,7 +106,7 @@ for (j in 1:length(traits)){
   y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
   yBLUE<-Y[,"BLUE_Trait"]
   
-for (i in 1:reps){
+for (i in 3:reps){
   setwd(paste0(WD,"OneTime1920/BetweenLoc_output/")) #where to create Rep# folder
   dir.create(paste0(Coltrait,"_ydBLUPs_Rep",i))
   WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/",Coltrait,"_ydBLUPs_Rep",i,"/")  # the path following WD
@@ -153,7 +153,7 @@ for (i in 1:reps){
   
   pop<-"BothYears_BetweenLoc"
   
-  ## Between Yr data
+  ## Both Year data
   datafdr<-paste0(WD,"OneTime1920/data/")
   load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
   rownames(Both_dBLUPs)<-Both_dBLUPs$Row.names
@@ -185,7 +185,7 @@ for (i in 1:reps){
     y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
     yBLUE<-Y[,"BLUE_Trait"]
     
-    for (i in 1:reps){
+    for (i in 1:2){
       setwd(paste0(WD,"OneTime1920/BetweenLoc_output/ydBLUPs_BothYearData/")) #where to create Rep# folder
       dir.create(paste0(Coltrait,"_ydBLUPs_Rep",i))
       WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/ydBLUPs_BothYearData/",Coltrait,"_ydBLUPs_Rep",i,"/")  # the path following WD
@@ -232,13 +232,18 @@ for (i in 1:reps){
 }
 
 
+#### Within Year Data
+WDStart<-paste0(WD,"OneTime1920/BetweenLoc_output/")
+
+#### Both Year data 
+WDStart<-paste0(WD,"OneTime1920/BetweenLoc_output/ydBLUPs_BothYearData/")
 
 rAll_traits_Loc<-NULL
 for (j in 1:length(traits)){
   Coltrait<-traits[j]
 rAll_Loc<-NULL
 for (i in 1:reps){
-  WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/",Coltrait,"_ydBLUPs_Rep",i,"/") 
+  WDloc<-paste0(WDStart,Coltrait,"_ydBLUPs_Rep",i,"/") 
   
   rAll_Loc[[i]]<-read.csv(paste0(WDloc,"r_1Loc_PP_Rep",i,".csv"),row.names=1)
       }  
@@ -247,5 +252,7 @@ for (i in 1:reps){
 }
 rownames(rAll_traits_Loc)<-traits
 
-write.csv(rAll_traits_Loc,"cor_BetweenLoc_20Reps_ydBLUPs_",pop,"_",length(traits),"_traits.csv")
+write.csv(rAll_traits_Loc,paste0(WD,"OneTime1920/BetweenLoc_output/","cor_BetweenLoc_20Reps_ydBLUPs_",pop,"_",length(traits),"_traits.csv"))
+
+
 

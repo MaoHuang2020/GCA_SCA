@@ -77,6 +77,8 @@ traits<-colnames(Both_dBLUPs)
 CrossBLUE<-Both_dBLUPs ##!!!
 ##### !!!
 
+
+  
 load(paste0(WD,"OneTime1920/Alldata_CV_output/sampleCV_250Indiv_0303_2021.Rdata"))
 
 sampleCV<-sampleCV
@@ -154,7 +156,9 @@ for (j in 1:length(traits)){
   
 }
 
-write.csv(cor,"10foldCV_cor2_using_250ES_BothYear_Indiv_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
+write.csv(colMeans(cor),paste0(paste0("cor_CV_no_Loc_BothYears_ydrBLUPs_data_",length(traits),"Traits_Mean.csv")))
+write.csv(cor,paste0("cor_CV_no_Loc_BothYears_ydrBLUPs_data_",length(traits),"Traits.csv"))
+
 
 # write.csv(cor,"10foldCV_cor2_using_2020y_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
 # write.csv(cor,"10foldCV_cor2_using_2019y_NoFMLoc_ydrBLUPs_",length(traits),"_Traits.csv")
@@ -196,3 +200,5 @@ for (i in 1:reps){
   predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
   cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
 }
+
+

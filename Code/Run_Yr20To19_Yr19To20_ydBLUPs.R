@@ -149,7 +149,8 @@ for (i in 1:reps){
   print(colMeans(cor))  
 }
 
-write.csv(cor,paste0("cor_",length(traits),"_traits_",pop,"_using_250ES_plots_NoFMLoc_ydrBLUP_as_y.csv"))
+write.csv(cor,paste0("cor_",pop,"_",length(traits),"_traits_","_using_250ES_ydrBLUP_NoLoc.csv"))
+write.csv(colMeans(cor),paste0("cor_",pop,"_",length(traits),"_traits_","_using_250ES_ydrBLUP_NoLoc_Mean.csv"))
 
 
 ## This is to confirm the cors using "predict" data
