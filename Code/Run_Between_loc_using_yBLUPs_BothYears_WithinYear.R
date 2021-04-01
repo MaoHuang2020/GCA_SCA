@@ -185,7 +185,7 @@ for (i in 3:reps){
     y<-Y[,"BLUE_Trait"]  # phenotypes column  !!!
     yBLUE<-Y[,"BLUE_Trait"]
     
-    for (i in 1:2){
+    for (i in 1:reps){
       setwd(paste0(WD,"OneTime1920/BetweenLoc_output/ydBLUPs_BothYearData/")) #where to create Rep# folder
       dir.create(paste0(Coltrait,"_ydBLUPs_Rep",i))
       WDloc<-paste0(WD,"OneTime1920/BetweenLoc_output/ydBLUPs_BothYearData/",Coltrait,"_ydBLUPs_Rep",i,"/")  # the path following WD

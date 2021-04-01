@@ -69,7 +69,7 @@ ETA<-list(
 #####!!!
 datafdr<-paste0(WD,"OneTime1920/data/")
 
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears_AddBD.Rdata")) ##!!!
 rownames(Both_dBLUPs)<-Both_dBLUPs$Row.names
 Both_dBLUPs<-Both_dBLUPs[,-1]
 traits<-colnames(Both_dBLUPs)
@@ -156,6 +156,8 @@ for (j in 1:length(traits)){
   
 }
 
+###!!! AddBD
+
 write.csv(colMeans(cor),paste0(paste0("cor_CV_no_Loc_BothYears_ydrBLUPs_data_",length(traits),"Traits_Mean.csv")))
 write.csv(cor,paste0("cor_CV_no_Loc_BothYears_ydrBLUPs_data_",length(traits),"Traits.csv"))
 
@@ -183,22 +185,22 @@ write.csv(cor,paste0("cor_CV_no_Loc_BothYears_ydrBLUPs_data_",length(traits),"Tr
 
 colMeans(cor)  # All 283 individuals from tmp   #noLOC 0.2696567
 
-
-cor2<-matrix(nrow=reps,ncol=1)
-for (i in 1:reps){
-  savepath<-paste0("OneTime1920/Alldata_CV_output/y2020BLUEnoLocRep",i,"/")
-  predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
-  cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
-}
-colMeans(cor2) #0.1827861     #noLOC 0.2699811
-write.csv(cor2,"10foldCV_cor2_using_250ES_plots_NoFMLoc_y2020BLUEas_y.csv")
-
-#
-cor2<-matrix(nrow=reps,ncol=1)
-for (i in 1:reps){
-  savepath<-paste0("OneTime1920/Alldata_CV_output/percDryWgt_yBLUEnoLocRep",i,"/")
-  predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
-  cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
-}
-
+# 
+# cor2<-matrix(nrow=reps,ncol=1)
+# for (i in 1:reps){
+#   savepath<-paste0("OneTime1920/Alldata_CV_output/y2020BLUEnoLocRep",i,"/")
+#   predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
+#   cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
+# }
+# colMeans(cor2) #0.1827861     #noLOC 0.2699811
+# write.csv(cor2,"10foldCV_cor2_using_250ES_plots_NoFMLoc_y2020BLUEas_y.csv")
+# 
+# #
+# cor2<-matrix(nrow=reps,ncol=1)
+# for (i in 1:reps){
+#   savepath<-paste0("OneTime1920/Alldata_CV_output/percDryWgt_yBLUEnoLocRep",i,"/")
+#   predict<-read.csv(paste0(WD,savepath,"predictions_rep",i,".csv"),sep=",",header=TRUE)
+#   cor2[i,]<-cor(predict[predict$popChk=="ES",]$yBLUE,predict[predict$popChk=="ES",]$yPred,use="complete")
+# }
+# 
 

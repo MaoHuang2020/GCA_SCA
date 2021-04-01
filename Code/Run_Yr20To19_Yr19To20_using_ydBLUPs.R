@@ -62,7 +62,7 @@ NAYr<-2019    ## This is the NAYr
 #####!!!
 datafdr<-paste0(WD,"OneTime1920/data/")
   ##!!!WithinYr Data
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) 
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear_AddBD.Rdata")) 
 WithinYr_Both_dBLUPs<-droplevels(WithinYr_Both_dBLUPs)
 
 identical(as.character(WithinYr_Both_dBLUPs$Row.names),as.character(WithinYr_Both_dBLUPs$plotNo.y))
@@ -149,6 +149,7 @@ for (i in 1:reps){
   print(colMeans(cor))  
 }
 
+### Add BD
 write.csv(cor,paste0("cor_",pop,"_",length(traits),"_traits_","_using_250ES_ydrBLUP_NoLoc.csv"))
 write.csv(colMeans(cor),paste0("cor_",pop,"_",length(traits),"_traits_","_using_250ES_ydrBLUP_NoLoc_Mean.csv"))
 

@@ -41,7 +41,7 @@ dataNH<-dataNHim   ### !!!!!
 #######
 #######
 
-traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM") 
+traits<-c("wetWgtPerM","percDryWgt","dryWgtPerM","Ash","AshFDwPM","densityBlades") 
 dataNH<-dataNHpi   ### !!!!!
 
 #######
@@ -55,12 +55,15 @@ dataNH<-dataNH
 ### Within Year
   # 2020_273 is the same as 2020_219
   comX<-c("SL18-OI-15-FG1xSA18-CB-2-MG3","SL18-LD-13-FG2xSL18-LD-13-MG2","SL18-LD-2-FG2xSL18-SF-19-MG1","SL18-NL-2-FG3xSA18-CB-4-MG1","SL18-NL-3-FG1xSA18-CB-7-MG2")
-Yr<-2020
+Yr<-2020  ###!!!!
+#
+Yr<-2019  ###!!!!
 WithinYear=TRUE
 dataNH<-dataNH[dataNH$Year==Yr,]
 dataNH<-dataNH[order(dataNH$plotNo),]
+
+
   dim(dataNH)
-  
 if (WithinYear==FALSE){
   ### Both Years
   NumCrosses<-length(unique(dataNH$Crosses))
@@ -180,7 +183,7 @@ rownames(Yr20_dBLUPs)<-Yr20_dBLUPs$plotNo
 
 #### Within Yr
 WithinYr_Plot_dBLUPs<-rbind(Yr19_dBLUPs,Yr20_dBLUPs) ##!!!
-save(WithinYr_Plot_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plotlevel_WithinYear.Rdata"))
+save(WithinYr_Plot_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plotlevel_WithinYear_AddBD.Rdata"))
   dim(WithinYr_Plot_dBLUPs)  
 
 WithinYr_Indi_dBLUPs<-rbind(Yr19_dBLUPs,Yr20_dBLUPs)
@@ -188,11 +191,13 @@ WithinYr_Indi_dBLUPs<-rbind(Yr19_dBLUPs,Yr20_dBLUPs)
 save(WithinYr_Indi_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_Indivlevel_WithinYear.Rdata"))
 
 WithinYr_Both_dBLUPs<-merge(WithinYr_Plot_dBLUPs,WithinYr_Indi_dBLUPs,by.x="row.names",by.y="row.names",all.x=TRUE)
-save(WithinYr_Both_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata"))
+save(WithinYr_Both_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear_AddBD.Rdata"))
+
+
 
 #### Two Years
 Plot_dBLUPs<-dBLUPs  ##!!!
-save(BLUPs,dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plotlevel_OverTwoYears.Rdata"))
+save(BLUPs,dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plotlevel_OverTwoYears_AddBD.Rdata"))
 
 Indi_dBLUPs<-dBLUPs  ##!!!
 save(BLUPs,dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_Individuallevel_OverTwoYears.Rdata"))
@@ -204,7 +209,7 @@ Both_dBLUPs<-merge(Plot_dBLUPs,Indi_dBLUPs,by.x="row.names",by.y="row.names",all
   dim(Both_dBLUPs)
   head(Both_dBLUPs)  
   
-save(Both_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata"))
+save(Both_dBLUPs,file=paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears_AddBD.Rdata"))
 
 ## Compare the BLUPs from BothYears vs WithinYear (cor ranged= 0.97-0.98)
 both<-merge(Plot_dBLUPs,WithinYr_Plot_dBLUPs,by.x="row.names",by.y="row.names",all.x=TRUE)
@@ -214,8 +219,9 @@ for (i in 1:5){
 
 #######
 #### Summarize the GS TP size--- BothYr
-datafdr<-paste0(WD,"OneTime1920/data/")
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears.Rdata")) ##!!!
+#datafdr<-paste0(WD,"OneTime1920/data/")  ## In terminal
+datafdr<-"/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/data/"
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_overTwoYears_AddBD.Rdata")) ##!!!
 
 size<-NULL
 traits<-colnames(Both_dBLUPs)[-1]
@@ -226,7 +232,7 @@ names(size)<-traits
 #######
 #######
 
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata"))
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear_AddBD.Rdata"))
 
 
 WithinYrSize<-NULL

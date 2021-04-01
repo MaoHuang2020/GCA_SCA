@@ -93,7 +93,7 @@ ETA<-list(
 #####!!!
 datafdr<-paste0(WD,"OneTime1920/data/")
   ##!!! WithinYear Data
-load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear.Rdata")) 
+load(paste0(datafdr,"Deregressed_BLUPs_ESplots_plot_Individuals_level_WithinYear_AddBD.Rdata")) 
 rownames(WithinYr_Both_dBLUPs)<-WithinYr_Both_dBLUPs$Row.names
 WithinYr_Both_dBLUPs<-WithinYr_Both_dBLUPs[,-1]
 
@@ -174,5 +174,6 @@ for (j in 1:length(traits)){
   
 }
 
+### AddBD (change "length(traits)" to "AddBD)
 write.csv(colMeans(cor),paste0(paste0("cor_CV_no_Loc_OnlyYr",Yr,"_ydrBLUPs_data_",length(traits),"Traits_Mean.csv")))
 write.csv(cor,paste0("cor_CV_no_Loc_OnlyYr",Yr,"_ydrBLUPs_data_",length(traits),"Traits.csv"))
